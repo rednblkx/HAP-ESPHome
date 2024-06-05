@@ -1,0 +1,136 @@
+
+esphome:
+    name: custom_components_test
+    platformio_options:
+      # board_build.f_flash: 40000000L
+      board_build.flash_mode: dio
+      # board_build.mcu: esp32c3
+      # board_build.variant: esp32c3  
+      # board_build.f_cpu: 160000000L
+      # board_build.flash_size: 4MB
+    # build_path: .build/custom_components_test
+    # platformio_options:
+    #   board_build.partitions: "../../../partitions.csv"
+    # libraries:
+    #   - https://github.com/rednblkx/libsodium-esphome
+
+wifi:
+  ssid: !secret wifi_ssid
+  password: !secret wifi_password
+
+api:
+
+web_server:
+  port: 8080
+
+light:
+  - platform: esp32_rmt_led_strip
+    id: test_light
+    rgb_order: GRB
+    pin: GPIO8
+    num_leds: 1
+    rmt_channel: 0
+    chipset: ws2812
+    name: "My Light"
+    restore_mode: RESTORE_DEFAULT_OFF
+
+  - platform: binary
+    id: desk_light
+    name: "Desk Lamp"
+    output: gpio_d1
+
+output:
+  - platform: gpio
+    pin: GPIO3
+    id: gpio_d1
+
+lock:
+  - platform: template
+    id: "this_lock"
+    name: "Main Lock"
+    optimistic: True
+    on_lock:
+    - logger.log: "Door Locked!"
+    on_unlock:
+    - logger.log: "Door Unlocked!"
+
+sensor:
+  - platform: template
+    id: "my_sensor"
+    name: "Template Sensor"
+    unit_of_measurement: "°C"
+    icon: "mdi:water-percent"
+    device_class: "temperature"
+    state_class: "measurement"
+    lambda: |-
+        return id(number_sensor).state;
+    update_interval: 10s
+
+number:
+  - platform: template
+    name: "Sensor Value"
+    min_value: 0
+    max_value: 30
+    step: 1
+    optimistic: True
+    id: "number_sensor"
+
+switch:
+  - platform: template
+    id: some_switch
+    name: "Template Switch"
+    optimistic: True
+    lambda: |-
+      if (id(test_light).current_values.get_state()) {
+        return true;
+      } else {
+        return false;
+      }
+    turn_on_action:
+      - light.turn_on: test_light
+    turn_off_action:
+      - light.turn_off: test_light
+# ota:
+
+# mdns:
+  # disabled: True
+
+external_components:
+  - source:
+      type: local
+      path: custom_components
+
+esp32:
+  board: esp32-c3-devkitm-1
+  flash_size: 4MB
+  framework:
+    type: esp-idf
+    version: latest
+    platform_version: 6.5.0
+    components:
+      # - name: esp32-tlv8
+      #   source: github://rednblkx/esp32-tlv8
+      # - name: esp32-utils
+      #   source: github://rednblkx/esp32-utils
+    # Custom sdkconfig options
+    sdkconfig_options:
+      CONFIG_COMPILER_OPTIMIZATION_SIZE: y
+      CONFIG_ESP32_DEFAULT_CPU_FREQ_160: "y"
+      CONFIG_ESP32_DEFAULT_CPU_FREQ_MHZ: "160"
+      # CONFIG_ESPTOOLPY_FLASHSIZE_4MB: y
+      # CONFIG_ESPTOOLPY_FLASHSIZE: 4MB
+      # CONFIG_MBEDTLS_HKDF_C: y
+      CONFIG_LWIP_MAX_SOCKETS: "16"
+      # CONFIG_APP_WIFI_PROV_TRANSPORT_SOFTAP: y
+      # CONFIG_ESP32_REV_MIN_3: y
+      # CONFIG_STACK_CHECK: y
+
+homekit:
+  exclude:
+    # - light: ["desk_light", "test_light"]
+      lock: ["this_lock"]
+      # sensor: ["my_sensor"]
+      # switch: ["some_switch"]
+logger:
+  hardware_uart: UART0
+  level: INFO
