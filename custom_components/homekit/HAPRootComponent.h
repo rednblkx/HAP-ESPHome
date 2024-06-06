@@ -1,3 +1,4 @@
+#pragma once
 #include "esphome/core/component.h"
 // #include <mdns.h>
 // #include "esphome/core/controller.h"
@@ -28,51 +29,55 @@
 #ifdef USE_SWITCH
 #include "switch.hpp"
 #endif
-// #ifdef USE_ESP32
-// #include <freertos/FreeRTOS.h>
-// #include <freertos/semphr.h>
-// #include <deque>
-// #endif
-// #include "list_entities.h"
-
+#ifdef USE_BUTTON
+#include "esphome/components/button/button.h"
+#endif
 namespace esphome
 {
 namespace homekit {
 
   class HAPRootComponent : public Component
   {
+  #ifdef USE_BUTTON
+    SUB_BUTTON(reset)
+  #endif
   private:
     static constexpr const char* TAG = "HAPRootComponent";
     std::string hostName;
-    uint16_t tcpPortNum = 32042;
+    bool exposeAll = true;
     static void hap_thread(void *arg);
     #ifdef USE_LIGHT
-    static LightEntity lightEntity;
+    LightEntity *lightEntity;
     #endif
     #ifdef USE_LOCK
-    static LockEntity lockEntity;
+    LockEntity *lockEntity;
     #endif
     #ifdef USE_SENSOR
-    static SensorEntity sensorEntity;
+    SensorEntity *sensorEntity;
     #endif
     #ifdef USE_SWITCH
-    static SwitchEntity switchEntity;
+    SwitchEntity *switchEntity;
     #endif
   public:
     #ifdef USE_LIGHT
+    std::vector<light::LightState*> include_lights;
     std::vector<light::LightState*> exclude_lights;
     #endif
     #ifdef USE_LOCK
+    std::vector<lock::Lock*> include_locks;
     std::vector<lock::Lock*> exclude_locks;
     #endif
     #ifdef USE_SENSOR
+    std::vector<sensor::Sensor*> include_sensors;
     std::vector<sensor::Sensor*> exclude_sensors;
     #endif
     #ifdef USE_SWITCH
+    std::vector<switch_::Switch*> include_switches;
     std::vector<switch_::Switch*> exclude_switches;
     #endif
     float get_setup_priority() const override { return setup_priority::AFTER_WIFI; }
-    HAPRootComponent();
+    void factory_reset();
+    HAPRootComponent(bool);
     void setup() override;
     void loop() override;
     void dump_config() override;

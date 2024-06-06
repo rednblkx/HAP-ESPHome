@@ -11,6 +11,9 @@ namespace esphome
     class LockEntity
     {
     private:
+      bool exposeAll;
+      std::vector<lock::Lock*> &included;
+      std::vector<lock::Lock*>& excluded;
       static constexpr const char* TAG = "LockEntity";
       void on_lock_update(lock::Lock* obj) {
         ESP_LOGI("on_lock_update", "%s state: %s", obj->get_name().c_str(), lock_state_to_string(obj->state));
@@ -64,13 +67,13 @@ namespace esphome
         return HAP_SUCCESS;
       }
     public:
-      LockEntity() {
-        for (auto* obj : App.get_locks()) {
+      LockEntity(bool exposeAll, std::vector<lock::Lock*> &included, std::vector<lock::Lock*> &excluded): exposeAll(exposeAll), included(included), excluded(excluded) {
+        for (auto* obj : exposeAll ? App.get_locks() : included) {
           if (!obj->is_internal())
             obj->add_on_state_callback([this, obj]() { this->on_lock_update(obj); });
         }
       }
-      void setup(std::vector<lock::Lock*> &excluded) {
+      void setup() {
         hap_acc_cfg_t bridge_cfg = {
             .model = "ESP-LOCK",
             .manufacturer = "rednblkx",
@@ -82,7 +85,8 @@ namespace esphome
         };
         hap_acc_t* accessory = nullptr;
         hap_serv_t* service = nullptr;
-        for (auto entity : App.get_locks()) {
+        for (auto entity : exposeAll ? App.get_locks() : included)
+        {
           bool skip = false;
           for (auto&& e : excluded)
           {

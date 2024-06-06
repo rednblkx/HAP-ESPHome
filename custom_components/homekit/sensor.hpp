@@ -11,6 +11,9 @@ namespace esphome
     class SensorEntity
     {
     private:
+      bool exposeAll;
+      std::vector<sensor::Sensor*> &included;
+      std::vector<sensor::Sensor*>& excluded;
       static constexpr const char* TAG = "SensorEntity";
       void on_sensor_update(sensor::Sensor* obj, float v) {
         ESP_LOGI(TAG, "%s value: %.2f", obj->get_name().c_str(), v);
@@ -39,13 +42,13 @@ namespace esphome
         return HAP_SUCCESS;
       }
     public:
-      SensorEntity() {
-        for (auto* obj : App.get_sensors()) {
+      SensorEntity(bool exposeAll, std::vector<sensor::Sensor*> &included, std::vector<sensor::Sensor*> &excluded):exposeAll(exposeAll), included(included), excluded(excluded) {
+        for (auto* obj : exposeAll ? App.get_sensors() : included) {
           if (!obj->is_internal())
             obj->add_on_state_callback([this, obj](float v) { this->on_sensor_update(obj, v); });
         }
       }
-      void setup(std::vector<sensor::Sensor*> &excluded) {
+      void setup() {
         hap_acc_cfg_t bridge_cfg = {
             .model = "ESP-SENSOR",
             .manufacturer = "rednblkx",
@@ -57,7 +60,8 @@ namespace esphome
         };
         hap_acc_t* accessory = nullptr;
         hap_serv_t* service = nullptr;
-        for (auto entity : App.get_sensors()) {
+        for (auto entity : exposeAll ? App.get_sensors() : included) 
+        {
           bool skip = false;
           for (auto&& e : excluded)
           {

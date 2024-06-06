@@ -93,6 +93,7 @@
     "complex": "cpp",
     "netfwd": "cpp",
     "fstream": "cpp",
-    "future": "cpp"
+    "future": "cpp",
+    "esp_hap_database.h": "c"
   }
 }
