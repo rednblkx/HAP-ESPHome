@@ -87,13 +87,12 @@ external_components:
       path: custom_components
 
 esp32:
-  board: esp32-c3-devkitm-1
+  board:  
   flash_size: 4MB
   framework:
     type: esp-idf
     version: latest
     platform_version: 6.5.0
-    components:
     sdkconfig_options:
       CONFIG_COMPILER_OPTIMIZATION_SIZE: y
       CONFIG_LWIP_MAX_SOCKETS: "16"
@@ -102,6 +101,22 @@ button:
   - platform: homekit
     factory_reset:
       name: "Reset Homekit pairings"
+
+climate:
+  - platform: thermostat
+    name: "Thermostat Climate Controller"
+    sensor: my_sensor
+    min_heating_off_time: 300s
+    min_heating_run_time: 300s
+    min_idle_time: 30s
+    heat_action:
+      - switch.turn_on: some_switch
+    idle_action:
+      - switch.turn_off: some_switch
+    default_preset: Home
+    preset:
+      - name: Home
+        default_target_temperature_low: 20 °C
 
 homekit:
   expose_all: False

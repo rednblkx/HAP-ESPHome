@@ -13,7 +13,7 @@ namespace esphome
     private:
       bool exposeAll;
       std::vector<sensor::Sensor*> &included;
-      std::vector<sensor::Sensor*>& excluded;
+      std::vector<sensor::Sensor*> &excluded;
       static constexpr const char* TAG = "SensorEntity";
       void on_sensor_update(sensor::Sensor* obj, float v) {
         ESP_LOGI(TAG, "%s value: %.2f", obj->get_name().c_str(), v);
@@ -87,11 +87,11 @@ namespace esphome
             service = hap_serv_carbon_dioxide_sensor_create(entity->state);
           } else if (std::equal(device_class.begin(), device_class.end(), "co")) {
             service = hap_serv_carbon_monoxide_sensor_create(entity->state);
-          } else if (std::equal(device_class.begin(), device_class.end(), "pm10")) {
-            service = hap_char_pm_10_density_create(entity->state);
+          }/*  else if (std::equal(device_class.begin(), device_class.end(), "pm10")) {
+            service = hap_serv_add_char(hap_char_pm_10_density_create(entity->state));
           } else if (std::equal(device_class.begin(), device_class.end(), "pm25")) {
-            service = hap_char_pm_2_5_density_create(entity->state);
-          }
+            service = hap_serv_add_char(hap_char_pm_2_5_density_create(entity->state));
+          } */
           /* Set the Accessory name as the Private data for the service,
           * so that the correct accessory can be identified in the
           * write callback

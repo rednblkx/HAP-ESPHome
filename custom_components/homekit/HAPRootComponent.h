@@ -1,12 +1,5 @@
 #pragma once
 #include "esphome/core/component.h"
-// #include <mdns.h>
-// #include "esphome/core/controller.h"
-// #include <nvs.h>
-// #include <esp_http_server.h>
-// #include <sodium/crypto_hash_sha512.h>
-// #include <mbedtls/base64.h>
-// #include <bootloader_random.h>
 #include "esphome/core/log.h"
 #include "esphome/core/application.h"
 #include <hap_apple_servs.h>
@@ -17,6 +10,7 @@
 #include <vector>
 #include <tuple>
 #include <algorithm>
+#include "const.h"
 #ifdef USE_LIGHT
 #include "light.hpp"
 #endif
@@ -28,6 +22,9 @@
 #endif
 #ifdef USE_SWITCH
 #include "switch.hpp"
+#endif
+#ifdef USE_CLIMATE
+#include "climate.hpp"
 #endif
 #ifdef USE_BUTTON
 #include "esphome/components/button/button.h"
@@ -46,6 +43,7 @@ namespace homekit {
     std::string hostName;
     bool exposeAll = true;
     static void hap_thread(void *arg);
+    TemperatureUnits tempUnits;
     #ifdef USE_LIGHT
     LightEntity *lightEntity;
     #endif
@@ -57,6 +55,9 @@ namespace homekit {
     #endif
     #ifdef USE_SWITCH
     SwitchEntity *switchEntity;
+    #endif
+    #ifdef USE_CLIMATE
+    ClimateEntity *climateEntity;
     #endif
   public:
     #ifdef USE_LIGHT
@@ -75,9 +76,13 @@ namespace homekit {
     std::vector<switch_::Switch*> include_switches;
     std::vector<switch_::Switch*> exclude_switches;
     #endif
+    #ifdef USE_CLIMATE
+    std::vector<climate::Climate*> include_climates;
+    std::vector<climate::Climate*> exclude_climates;
+    #endif
     float get_setup_priority() const override { return setup_priority::AFTER_WIFI; }
     void factory_reset();
-    HAPRootComponent(bool);
+    HAPRootComponent(bool, TemperatureUnits);
     void setup() override;
     void loop() override;
     void dump_config() override;

@@ -11,12 +11,18 @@ MULTI_CONF = True
 
 hap_component_ns = cg.esphome_ns.namespace('homekit')
 HAPRootComponent = hap_component_ns.class_('HAPRootComponent', cg.Component, cg.Controller)
-
+TemperatureUnits = hap_component_ns.enum("TemperatureUnits")
 CONF_HAP_ID = "hap_id"
 CONF_IDENTIFY_LAMBDA = "identify_fn"
 CONF_INCLUDE_ENTITIES = "include"
 CONF_EXCLUDE_ENTITIES = "exclude"
 CONF_EXPOSE_ALL = "expose_all"
+CONF_CLIMATE_UNITS = "climate_units"
+
+TEMP_UNITS = {
+    "CELSIUS": TemperatureUnits.CELSIUS,
+    "FAHRENHEIT": TemperatureUnits.FAHRENHEIT
+}
 
 entities_list = {
     cv.Optional("light"): cv.ensure_list(cv.use_id(light.LightState)),
@@ -35,6 +41,7 @@ entities_list = {
 CONFIG_SCHEMA = cv.All(cv.Schema({
     cv.GenerateID(): cv.declare_id(HAPRootComponent),
     cv.Optional(CONF_EXPOSE_ALL, default=True) : cv.boolean,
+    cv.Optional(CONF_CLIMATE_UNITS, default="CELSIUS"): cv.enum(TEMP_UNITS, upper=True),
     # cv.Optional(CONF_IDENTIFY_LAMBDA) : cv.All(cv.ensure_list(identify_acc), cv.Length(min=1, max=64)),
     cv.Optional(CONF_INCLUDE_ENTITIES) : cv.All(cv.ensure_list(entities_list), cv.Length(min=1, max=64)),
     cv.Optional(CONF_EXCLUDE_ENTITIES) : cv.All(cv.ensure_list(entities_list), cv.Length(min=1, max=64)),
@@ -58,7 +65,7 @@ async def to_code(config):
         ref="master",
         components=["esp_hap_core", "esp_hap_apple_profiles", "esp_hap_extras", "esp_hap_platform", "hkdf-sha", "mu_srp"],
     )
-    var = cg.new_Pvariable(config[CONF_ID], config[CONF_EXPOSE_ALL])
+    var = cg.new_Pvariable(config[CONF_ID], config[CONF_EXPOSE_ALL], config[CONF_CLIMATE_UNITS])
     if CONF_PORT in config:
         add_idf_sdkconfig_option("CONFIG_HAP_HTTP_SERVER_PORT", config[CONF_PORT])
     if CONF_EXCLUDE_ENTITIES in config:

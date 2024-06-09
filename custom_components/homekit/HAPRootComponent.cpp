@@ -87,7 +87,7 @@ namespace esphome
             vTaskDelete(NULL);
         }
 
-        HAPRootComponent::HAPRootComponent(bool exposeAll) : exposeAll(exposeAll)
+        HAPRootComponent::HAPRootComponent(bool exposeAll, TemperatureUnits tempUnits) : exposeAll(exposeAll), tempUnits(tempUnits)
         {
             ESP_LOGI(TAG, "[APP] Free memory: %" PRIu32 " bytes", esp_get_free_heap_size());
             ESP_LOGI(TAG, "[APP] IDF version: %s", esp_get_idf_version());
@@ -114,6 +114,10 @@ namespace esphome
             #endif
             #ifdef USE_SENSOR
             lockEntity = new LockEntity(exposeAll, include_locks, exclude_locks);
+            #endif
+            #ifdef USE_CLIMATE
+            climateEntity = new ClimateEntity(exposeAll, include_climates, exclude_climates);
+            climateEntity->setUnits(tempUnits);
             #endif
             xTaskCreate(hap_thread, "hap_task", 4 * 1024, this, 2, NULL);
         }
