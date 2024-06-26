@@ -1,5 +1,6 @@
-#ifdef USE_LOCK
 #pragma once
+#include <esphome/core/defines.h>
+#ifdef USE_LOCK
 #include <esphome/core/application.h>
 #include <hap.h>
 #include <hap_apple_servs.h>
@@ -11,9 +12,6 @@ namespace esphome
     class LockEntity
     {
     private:
-      bool exposeAll;
-      std::vector<lock::Lock*> &included;
-      std::vector<lock::Lock*>& excluded;
       static constexpr const char* TAG = "LockEntity";
       void on_lock_update(lock::Lock* obj) {
         ESP_LOGI("on_lock_update", "%s state: %s", obj->get_name().c_str(), lock_state_to_string(obj->state));
@@ -67,14 +65,9 @@ namespace esphome
         return HAP_SUCCESS;
       }
     public:
-      LockEntity(bool exposeAll, std::vector<lock::Lock*> &included, std::vector<lock::Lock*> &excluded): exposeAll(exposeAll), included(included), excluded(excluded) {
-        for (auto* obj : exposeAll ? App.get_locks() : included) {
-          if (!obj->is_internal())
-            obj->add_on_state_callback([this, obj]() { this->on_lock_update(obj); });
-        }
-      }
-      void setup() {
-        hap_acc_cfg_t bridge_cfg = {
+      LockEntity() {}
+      void setup(lock::Lock* lockPtr) {
+        hap_acc_cfg_t acc_cfg = {
             .model = "ESP-LOCK",
             .manufacturer = "rednblkx",
             .fw_rev = "0.1.0",
@@ -85,42 +78,26 @@ namespace esphome
         };
         hap_acc_t* accessory = nullptr;
         hap_serv_t* service = nullptr;
-        for (auto entity : exposeAll ? App.get_locks() : included)
-        {
-          bool skip = false;
-          for (auto&& e : excluded)
-          {
-            if (e->get_object_id_hash() == entity->get_object_id_hash()) {
-              skip = true;
-              break;
-            }
-          }
-          if (skip) continue;
-          std::string accessory_name = entity->get_name();
-          bridge_cfg.name = accessory_name.data();
-          bridge_cfg.serial_num = std::to_string(entity->get_object_id_hash()).data();
-          /* Create accessory object */
-          accessory = hap_acc_create(&bridge_cfg);
-          /* Create the Lock Service. Include the "name" since this is a user visible service  */
-          service = hap_serv_lock_mechanism_create(entity->state, entity->state);
+        std::string accessory_name = lockPtr->get_name();
+        acc_cfg.name = accessory_name.data();
+        acc_cfg.serial_num = std::to_string(lockPtr->get_object_id_hash()).data();
+        accessory = hap_acc_create(&acc_cfg);
+        service = hap_serv_lock_mechanism_create(lockPtr->state, lockPtr->state);
 
-          /* Set the Accessory name as the Private data for the service,
-          * so that the correct accessory can be identified in the
-          * write callback
-          */
-          ESP_LOGI(TAG, "ID HASH: %lu", entity->get_object_id_hash());
-          hap_serv_set_priv(service, strdup(std::to_string(entity->get_object_id_hash()).c_str()));
+        ESP_LOGI(TAG, "ID HASH: %lu", lockPtr->get_object_id_hash());
+        hap_serv_set_priv(service, strdup(std::to_string(lockPtr->get_object_id_hash()).c_str()));
 
-          /* Set the write callback for the service */
-          hap_serv_set_write_cb(service, lock_write);
+        /* Set the write callback for the service */
+        hap_serv_set_write_cb(service, lock_write);
 
-          /* Add the Lock Service to the Accessory Object */
-          hap_acc_add_serv(accessory, service);
+        /* Add the Lock Service to the Accessory Object */
+        hap_acc_add_serv(accessory, service);
 
 
-          /* Add the Accessory to the HomeKit Database */
-          hap_add_bridged_accessory(accessory, hap_get_unique_aid(std::to_string(entity->get_object_id_hash()).c_str()));
-        }
+        /* Add the Accessory to the HomeKit Database */
+        hap_add_bridged_accessory(accessory, hap_get_unique_aid(std::to_string(lockPtr->get_object_id_hash()).c_str()));
+        if (!lockPtr->is_internal())
+          lockPtr->add_on_state_callback([this, lockPtr]() { this->on_lock_update(lockPtr); });
       }
     };
   }

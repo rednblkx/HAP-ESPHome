@@ -7,8 +7,8 @@ from esphome.const import (
     ENTITY_CATEGORY_CONFIG,
     ICON_RESTART_ALERT,
 )
-from .. import hap_component_ns, HAPRootComponent, CONF_HAP_ID
-ResetButton = hap_component_ns.class_("ResetButton", button.Button)
+from .. import homekit_ns, HAPRootComponent, CONF_HAP_ID
+ResetButton = homekit_ns.class_("ResetButton", button.Button)
 
 CONFIG_SCHEMA = {
     cv.GenerateID(CONF_HAP_ID): cv.use_id(HAPRootComponent),

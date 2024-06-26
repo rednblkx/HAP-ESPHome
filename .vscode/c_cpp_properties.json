@@ -6,6 +6,8 @@
                 "${workspaceFolder}/.esphome/build/custom_components_test/src",
                 "${workspaceFolder}/.esphome/build/custom_components_test/src/esphome/core",
                 "${workspaceFolder}/.esphome/build/custom_components_test/.piolibdeps/custom_components_test/ArduinoJson/src",
+                "${workspaceFolder}/.esphome/build/custom_components_test/components/esp_hap_apple_profiles/include",
+                "${workspaceFolder}/.esphome/build/custom_components_test/components/esp_hap_core/include",
                 "${workspaceFolder}/.esphome/build/custom_components_test/components/**",
                 "${workspaceFolder}/.esphome/build/custom_components_test/src",
                 "${workspaceFolder}/.esphome/build/custom_components_test/.piolibdeps/custom_components_test/ArduinoJson/src",
@@ -158,6 +160,8 @@
                 "limitSymbolsToIncludedHeaders": false,
                 "path": [
                     "${workspaceFolder}/.esphome/build/custom_components_test/src",
+                    "${workspaceFolder}/.esphome/build/custom_components_test/src/esphome",
+                    "${workspaceFolder}/.esphome/build/custom_components_test/src/esphome/core",
                     "${HOME}/Desktop/esphome",
                     "${workspaceFolder}/.esphome/build/custom_components_test/components",
                     "${HOME}/.platformio/packages/framework-espidf/components",

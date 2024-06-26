@@ -17,10 +17,12 @@ namespace esphome
         void HAPRootComponent::factory_reset() {
             hap_reset_pairings();
         }
-        
-        void HAPRootComponent::hap_thread(void* arg)
+
+        HAPRootComponent::HAPRootComponent()
         {
-            HAPRootComponent* root = (HAPRootComponent*)arg;
+            ESP_LOGI(TAG, "[APP] Free memory: %" PRIu32 " bytes", esp_get_free_heap_size());
+            ESP_LOGI(TAG, "[APP] IDF version: %s", esp_get_idf_version());
+            ESP_LOGI(TAG, "%s", esp_err_to_name(nvs_flash_init()));
             hap_acc_t* accessory;
             /* Initialize the HAP core */
             hap_init(HAP_TRANSPORT_WIFI);
@@ -62,64 +64,17 @@ namespace esphome
 
             /* Add the Accessory to the HomeKit Database */
             hap_add_accessory(accessory);
-            #ifdef USE_LIGHT
-            root->lightEntity->setup();
-            #endif
-            #ifdef USE_LOCK
-            root->lockEntity->setup();
-            #endif
-            #ifdef USE_SENSOR
-            root->sensorEntity->setup();
-            #endif
-            #ifdef USE_SWITCH
-            root->switchEntity->setup();
-            #endif
             /* Unique Setup code of the format xxx-xx-xxx. Default: 111-22-333 */
             hap_set_setup_code("111-22-333");
             /* Unique four character Setup Id. Default: ES32 */
             hap_set_setup_id("ES32");
-
-            // hap_http_debug_enable();
-            hap_set_debug_level(HAP_DEBUG_LEVEL_ASSERT);
-            hap_start();
-
-            /* The task ends here. The read/write callbacks will be invoked by the HAP Framework */
-            vTaskDelete(NULL);
-        }
-
-        HAPRootComponent::HAPRootComponent(bool exposeAll, TemperatureUnits tempUnits) : exposeAll(exposeAll), tempUnits(tempUnits)
-        {
-            ESP_LOGI(TAG, "[APP] Free memory: %" PRIu32 " bytes", esp_get_free_heap_size());
-            ESP_LOGI(TAG, "[APP] IDF version: %s", esp_get_idf_version());
-            ESP_LOGI(TAG, "%s", esp_err_to_name(nvs_flash_init()));
-            include_lights = std::vector<light::LightState*>();
-            exclude_lights = std::vector<light::LightState*>();
-            include_sensors = std::vector<sensor::Sensor*>();
-            exclude_sensors = std::vector<sensor::Sensor*>();
-            include_switches = std::vector<switch_::Switch*>();
-            exclude_switches = std::vector<switch_::Switch*>();
-            include_locks = std::vector<lock::Lock*>();
-            exclude_locks = std::vector<lock::Lock*>();
         }
 
         void HAPRootComponent::setup() {
-            #ifdef USE_LIGHT
-            lightEntity = new LightEntity(exposeAll, include_lights, exclude_lights);
-            #endif
-            #ifdef USE_SWITCH
-            switchEntity = new SwitchEntity(exposeAll, include_switches, exclude_switches);
-            #endif
-            #ifdef USE_SENSOR
-            sensorEntity = new SensorEntity(exposeAll, include_sensors, exclude_sensors);
-            #endif
-            #ifdef USE_SENSOR
-            lockEntity = new LockEntity(exposeAll, include_locks, exclude_locks);
-            #endif
-            #ifdef USE_CLIMATE
-            climateEntity = new ClimateEntity(exposeAll, include_climates, exclude_climates);
-            climateEntity->setUnits(tempUnits);
-            #endif
-            xTaskCreate(hap_thread, "hap_task", 4 * 1024, this, 2, NULL);
+            hap_http_debug_enable();
+            hap_set_debug_level(HAP_DEBUG_LEVEL_ERR);
+            esp_log_level_set("HAP", ESP_LOG_INFO);
+            hap_start();
         }
 
         void HAPRootComponent::loop() {

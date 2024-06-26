@@ -1,5 +1,6 @@
-#ifdef USE_SWITCH
 #pragma once
+#include <esphome/core/defines.h>
+#ifdef USE_SWITCH
 #include <esphome/core/application.h>
 #include <hap.h>
 #include <hap_apple_servs.h>
@@ -12,9 +13,6 @@ namespace esphome
     class SwitchEntity
     {
     private:
-      bool exposeAll = true;
-      std::vector<switch_::Switch*>& included;
-      std::vector<switch_::Switch*>& excluded;
       static constexpr const char* TAG = "SwitchEntity";
       static int switch_write(hap_write_data_t write_data[], int count, void* serv_priv, void* write_priv) {
         std::string key((char*)serv_priv);
@@ -53,14 +51,9 @@ namespace esphome
         return HAP_SUCCESS;
       }
     public:
-      SwitchEntity(bool exposeAll, std::vector<switch_::Switch*>& included, std::vector<switch_::Switch*>& excluded) : exposeAll(exposeAll), included(included), excluded(excluded) {
-        for (auto* obj : exposeAll ? App.get_switches() : included) {
-          if (!obj->is_internal())
-            obj->add_on_state_callback([this, obj](bool v) { this->on_switch_update(obj, v); });
-        }
-      }
-      void setup() {
-        hap_acc_cfg_t bridge_cfg = {
+      SwitchEntity() {}
+      void setup(switch_::Switch* switchPtr) {
+        hap_acc_cfg_t acc_cfg = {
             .model = "ESP-Switch",
             .manufacturer = "rednblkx",
             .fw_rev = "0.1.0",
@@ -71,36 +64,27 @@ namespace esphome
         };
         hap_acc_t* accessory = nullptr;
         hap_serv_t* service = nullptr;
-        for (auto obj : exposeAll ? App.get_switches() : included)
-        {
-          bool skip = false;
-          for (auto&& e : excluded) {
-            if (e->get_object_id_hash() == obj->get_object_id_hash()) {
-              skip = true;
-              break;
-            }
-          }
-          if (skip) continue;
-          std::string accessory_name = obj->get_name();
-          bridge_cfg.name = accessory_name.data();
-          bridge_cfg.serial_num = std::to_string(obj->get_object_id_hash()).data();
-          /* Create accessory object */
-          accessory = hap_acc_create(&bridge_cfg);
-          /* Create the switch Service. Include the "name" since this is a user visible service  */
-          service = hap_serv_switch_create(obj->state);
+        std::string accessory_name = switchPtr->get_name();
+        acc_cfg.name = accessory_name.data();
+        acc_cfg.serial_num = std::to_string(switchPtr->get_object_id_hash()).data();
+        /* Create accessory object */
+        accessory = hap_acc_create(&acc_cfg);
+        /* Create the switch Service. Include the "name" since this is a user visible service  */
+        service = hap_serv_switch_create(switchPtr->state);
 
-          ESP_LOGI(TAG, "ID HASH: %lu", obj->get_object_id_hash());
-          hap_serv_set_priv(service, strdup(std::to_string(obj->get_object_id_hash()).c_str()));
+        ESP_LOGI(TAG, "ID HASH: %lu", switchPtr->get_object_id_hash());
+        hap_serv_set_priv(service, strdup(std::to_string(switchPtr->get_object_id_hash()).c_str()));
 
-          /* Set the write callback for the service */
-          hap_serv_set_write_cb(service, switch_write);
+        /* Set the write callback for the service */
+        hap_serv_set_write_cb(service, switch_write);
 
-          /* Add the switch Service to the Accessory Object */
-          hap_acc_add_serv(accessory, service);
+        /* Add the Switch Service to the Accessory Object */
+        hap_acc_add_serv(accessory, service);
 
-          /* Add the Accessory to the HomeKit Database */
-          hap_add_bridged_accessory(accessory, hap_get_unique_aid(std::to_string(obj->get_object_id_hash()).c_str()));
-        }
+        /* Add the Accessory to the HomeKit Database */
+        hap_add_bridged_accessory(accessory, hap_get_unique_aid(std::to_string(switchPtr->get_object_id_hash()).c_str()));
+        if (!switchPtr->is_internal())
+          switchPtr->add_on_state_callback([this, switchPtr](bool v) { this->on_switch_update(switchPtr, v); });
       }
     };
   }

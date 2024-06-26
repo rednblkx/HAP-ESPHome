@@ -9,6 +9,7 @@ wifi:
   password: !secret wifi_password
 
 api:
+  reboot_timeout: 0s
 
 web_server:
   port: 8080
@@ -27,12 +28,13 @@ light:
   - platform: binary
     id: desk_light
     name: "Desk Lamp"
-    output: gpio_d1
+    output: simple_led
+    restore_mode: RESTORE_DEFAULT_OFF
 
 output:
   - platform: gpio
     pin: GPIO3
-    id: gpio_d1
+    id: simple_led
 
 lock:
   - platform: template
@@ -55,11 +57,21 @@ sensor:
     lambda: |-
         return id(number_sensor).state;
     update_interval: 10s
+  - platform: template
+    id: "my_sensor_second"
+    name: "Template Sensor 1"
+    unit_of_measurement: "°C"
+    icon: "mdi:water-percent"
+    device_class: "temperature"
+    state_class: "measurement"
+    lambda: |-
+        return id(number_sensor).state;
+    update_interval: 10s
 
 number:
   - platform: template
     name: "Sensor Value"
-    min_value: 0
+    min_value: 10
     max_value: 30
     step: 1
     optimistic: True
@@ -69,7 +81,7 @@ switch:
   - platform: template
     id: some_switch
     name: "Template Switch"
-    optimistic: True
+    restore_mode: RESTORE_DEFAULT_OFF
     lambda: |-
       if (id(test_light).current_values.get_state()) {
         return true;
@@ -87,46 +99,40 @@ external_components:
       path: custom_components
 
 esp32:
-  board:  
+  board: esp32-c3-devkitm-1
   flash_size: 4MB
   framework:
     type: esp-idf
-    version: latest
-    platform_version: 6.5.0
+    version: 5.2.1
+    platform_version: 6.7.0
     sdkconfig_options:
       CONFIG_COMPILER_OPTIMIZATION_SIZE: y
       CONFIG_LWIP_MAX_SOCKETS: "16"
+      CONFIG_NEWLIB_NANO_FORMAT: y
+      CONFIG_LOG_DEFAULT_LEVEL_ERROR: y
+      CONFIG_LOG_DEFAULT_LEVEL: "1"
+      CONFIG_LOG_MAXIMUM_LEVEL_INFO: y
+      CONFIG_LOG_MAXIMUM_LEVEL: "3"
 
 button:
-  - platform: homekit
+  - platform: homekit_base
     factory_reset:
       name: "Reset Homekit pairings"
 
-climate:
-  - platform: thermostat
-    name: "Thermostat Climate Controller"
-    sensor: my_sensor
-    min_heating_off_time: 300s
-    min_heating_run_time: 300s
-    min_idle_time: 30s
-    heat_action:
-      - switch.turn_on: some_switch
-    idle_action:
-      - switch.turn_off: some_switch
-    default_preset: Home
-    preset:
-      - name: Home
-        default_target_temperature_low: 20 °C
+homekit_base:
 
 homekit:
-  expose_all: False
-  include:
-    light: ["desk_light", "test_light"]
-  # exclude:
-  #   light: ["desk_light", "test_light"]
-  #   lock: ["this_lock"]
-  #   sensor: ["my_sensor"]
-  #   switch: ["some_switch"]
+  light:
+    - id: test_light
+    - id: desk_light
+  sensor:
+    - id: my_sensor
+    - id: my_sensor_second
+  switch:
+    - id: some_switch
+  lock:
+    - id: this_lock
+
 logger:
   hardware_uart: UART0
   level: INFO
