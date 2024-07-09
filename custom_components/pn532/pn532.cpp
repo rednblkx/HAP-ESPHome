@@ -254,6 +254,8 @@ std::vector<uint8_t> PN532::inDataExchange(const std::vector<uint8_t>& data) {
       return std::vector<uint8_t>();
     }
   }
+  int timeout = 0;
+  while (this->read_ready_(true) != pn532::PN532ReadReady::READY) { timeout++; delay(1); if (timeout > 250) break; }
 
   std::vector<uint8_t> buffer;
   if (!this->read_response(PN532_COMMAND_INDATAEXCHANGE, buffer)) {
@@ -261,7 +263,6 @@ std::vector<uint8_t> PN532::inDataExchange(const std::vector<uint8_t>& data) {
     // this->mark_failed();
     return std::vector<uint8_t>();
   }
-  ESP_LOGI(TAG, "%s", format_hex_pretty(buffer).c_str());
   return buffer;
 }
 
