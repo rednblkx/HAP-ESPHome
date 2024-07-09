@@ -6,7 +6,7 @@
 #include "light.hpp"
 #endif
 #ifdef USE_LOCK
-#include "lock.hpp"
+#include "lock.h"
 #endif
 #ifdef USE_SWITCH
 #include "switch.hpp"
