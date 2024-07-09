@@ -1,3 +1,4 @@
+#pragma once
 #include <esp_log.h>
 #include <esphome/core/defines.h>
 #include <esphome/core/component.h>
@@ -24,17 +25,25 @@ namespace esphome
     {
     public:
       HAPAccessory();
+      ~HAPAccessory();
       float get_setup_priority() const override { return setup_priority::AFTER_WIFI - 1; }
       void setup() override;
       void loop() override;
       void dump_config() override;
-#ifdef USE_LIGHT
+      #ifdef USE_HOMEKEY
+      pn532::PN532* nfc = nullptr;
+      #endif
+      #ifdef USE_LIGHT
       std::vector<light::LightState*> lights;
       void add_light(light::LightState* lightPtr);
       #endif
       #ifdef USE_LOCK
       std::vector<lock::Lock*> locks;
+      LockEntity* lockCtx;
       void add_lock(lock::Lock* lockPtr);
+      #endif
+      #ifdef USE_HOMEKEY
+      void set_nfc_ctx(pn532::PN532* nfcCtx);
       #endif
       #ifdef USE_SWITCH
       std::vector<switch_::Switch*> switches;

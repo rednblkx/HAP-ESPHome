@@ -14,22 +14,22 @@ api:
 web_server:
   port: 8080
 
-light:
-  - platform: esp32_rmt_led_strip
-    id: test_light
-    rgb_order: GRB
-    pin: GPIO8
-    num_leds: 1
-    rmt_channel: 0
-    chipset: ws2812
-    name: "My Light"
-    restore_mode: RESTORE_DEFAULT_OFF
+# light:
+#   - platform: esp32_rmt_led_strip
+#     id: test_light
+#     rgb_order: GRB
+#     pin: GPIO8
+#     num_leds: 1
+#     rmt_channel: 0
+#     chipset: ws2812
+#     name: "My Light"
+#     restore_mode: RESTORE_DEFAULT_OFF
 
-  - platform: binary
-    id: desk_light
-    name: "Desk Lamp"
-    output: simple_led
-    restore_mode: RESTORE_DEFAULT_OFF
+  # - platform: binary
+  #   id: desk_light
+  #   name: "Desk Lamp"
+  #   output: simple_led
+  #   restore_mode: RESTORE_DEFAULT_OFF
 
 output:
   - platform: gpio
@@ -46,57 +46,73 @@ lock:
     on_unlock:
     - logger.log: "Door Unlocked!"
 
-sensor:
-  - platform: template
-    id: "my_sensor"
-    name: "Template Sensor"
-    unit_of_measurement: "°C"
-    icon: "mdi:water-percent"
-    device_class: "temperature"
-    state_class: "measurement"
-    lambda: |-
-        return id(number_sensor).state;
-    update_interval: 10s
-  - platform: template
-    id: "my_sensor_second"
-    name: "Template Sensor 1"
-    unit_of_measurement: "°C"
-    icon: "mdi:water-percent"
-    device_class: "temperature"
-    state_class: "measurement"
-    lambda: |-
-        return id(number_sensor).state;
-    update_interval: 10s
+# sensor:
+#   - platform: template
+#     id: "my_sensor"
+#     name: "Template Sensor"
+#     unit_of_measurement: "°C"
+#     icon: "mdi:water-percent"
+#     device_class: "temperature"
+#     state_class: "measurement"
+#     lambda: |-
+#         return id(number_sensor).state;
+#     update_interval: 10s
+#   - platform: template
+#     id: "my_sensor_second"
+#     name: "Template Sensor 1"
+#     unit_of_measurement: "°C"
+#     icon: "mdi:water-percent"
+#     device_class: "temperature"
+#     state_class: "measurement"
+#     lambda: |-
+#         return id(number_sensor).state;
+#     update_interval: 10s
 
-number:
-  - platform: template
-    name: "Sensor Value"
-    min_value: 10
-    max_value: 30
-    step: 1
-    optimistic: True
-    id: "number_sensor"
+# number:
+#   - platform: template
+#     name: "Sensor Value"
+#     min_value: 10
+#     max_value: 30
+#     step: 1
+#     optimistic: True
+#     id: "number_sensor"
 
-switch:
-  - platform: template
-    id: some_switch
-    name: "Template Switch"
-    restore_mode: RESTORE_DEFAULT_OFF
-    lambda: |-
-      if (id(test_light).current_values.get_state()) {
-        return true;
-      } else {
-        return false;
-      }
-    turn_on_action:
-      - light.turn_on: test_light
-    turn_off_action:
-      - light.turn_off: test_light
+# switch:
+#   - platform: template
+#     id: some_switch
+#     name: "Template Switch"
+#     restore_mode: RESTORE_DEFAULT_OFF
+#     lambda: |-
+#       if (id(test_light).current_values.get_state()) {
+#         return true;
+#       } else {
+#         return false;
+#       }
+#     turn_on_action:
+#       - light.turn_on: test_light
+#     turn_off_action:
+#       - light.turn_off: test_light
 
 external_components:
   - source:
       type: local
       path: custom_components
+
+# lock_nfc:
+#   id: homekey_nfc
+# #   cs_pin: 7
+#   nfc_id: nfc_spi_module
+
+spi:
+  clk_pin: 4
+  miso_pin: 5
+  mosi_pin: 6
+
+pn532_spi:
+  # - platform: lock_nfc
+  id: nfc_spi_module
+  cs_pin: 7
+    # update_interval: 1s
 
 esp32:
   board: esp32-c3-devkitm-1
@@ -113,26 +129,27 @@ esp32:
       CONFIG_LOG_DEFAULT_LEVEL: "1"
       CONFIG_LOG_MAXIMUM_LEVEL_INFO: y
       CONFIG_LOG_MAXIMUM_LEVEL: "3"
+      CONFIG_MBEDTLS_HKDF_C: y
 
 button:
   - platform: homekit_base
     factory_reset:
       name: "Reset Homekit pairings"
 
-homekit_base:
+# homekit_base:
 
 homekit:
-  light:
-    - id: test_light
-    - id: desk_light
-  sensor:
-    - id: my_sensor
-    - id: my_sensor_second
-  switch:
-    - id: some_switch
+  # light:
+  #   - id: test_light
+  # sensor:
+  #   - id: my_sensor
+  #   - id: my_sensor_second
+  # switch:
+  #   - id: some_switch
   lock:
     - id: this_lock
+      nfc_id: nfc_spi_module
 
 logger:
   hardware_uart: UART0
-  level: INFO
+  level: DEBUG

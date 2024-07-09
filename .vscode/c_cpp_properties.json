@@ -8,7 +8,7 @@
                 "${workspaceFolder}/.esphome/build/custom_components_test/.piolibdeps/custom_components_test/ArduinoJson/src",
                 "${workspaceFolder}/.esphome/build/custom_components_test/components/esp_hap_apple_profiles/include",
                 "${workspaceFolder}/.esphome/build/custom_components_test/components/esp_hap_core/include",
-                "${workspaceFolder}/.esphome/build/custom_components_test/components/**",
+                "${workspaceFolder}/.esphome/build/custom_components_test/components/jsoncons/include",
                 "${workspaceFolder}/.esphome/build/custom_components_test/src",
                 "${workspaceFolder}/.esphome/build/custom_components_test/.piolibdeps/custom_components_test/ArduinoJson/src",
                 "${HOME}/.platformio/packages/framework-espidf@3.50102.240122/components/riscv/include",
@@ -154,7 +154,10 @@
                 "${workspaceFolder}/.esphome/build/custom_components_test/components/esp_hap_platform/include",
                 "${workspaceFolder}/.esphome/build/custom_components_test/components/esp_hap_core/include",
                 "${workspaceFolder}/.esphome/build/custom_components_test/components/esp_hap_apple_profiles/include",
-                "${workspaceFolder}/.esphome/build/custom_components_test/components/esp_hap_extras/include"
+                "${workspaceFolder}/.esphome/build/custom_components_test/components/esp_hap_extras/include",
+                "${workspaceFolder}/.esphome/build/custom_components_test/components/HK-HomeKit-Lib/include",
+                "${workspaceFolder}/.esphome/build/custom_components_test/components/HK-HomeKit-Lib/include",
+                "${workspaceFolder}/.esphome/build/custom_components_test/managed_components/espressif__cbor/port/include"
             ],
             "browse": {
                 "limitSymbolsToIncludedHeaders": false,
@@ -165,27 +168,9 @@
                     "${HOME}/Desktop/esphome",
                     "${workspaceFolder}/.esphome/build/custom_components_test/components",
                     "${HOME}/.platformio/packages/framework-espidf/components",
-                    "${workspaceFolder}/.esphome/build/custom_components_test/.piolibdeps/custom_components_test",
+                    "${workspaceFolder}/.esphome/build/custom_components_test/.piolibdeps/custom_components_test"
                 ]
             },
-            // "defines": [
-            //     "configENABLE_FREERTOS_DEBUG_OCDAWARE=1",
-            //     "_POSIX_READER_WRITER_LOCKS",
-            //     "_GNU_SOURCE",
-            //     "SOC_MMU_PAGE_SIZE=CONFIG_MMU_PAGE_SIZE",
-            //     "IDF_VER=\"5.1.2\"",
-            //     "ESP_PLATFORM",
-            //     "PLATFORMIO=60113",
-            //     "ARDUINO_D1_MINI32",
-            //     "ESPHOME_LOG_LEVEL=ESPHOME_LOG_LEVEL_INFO",
-            //     "HAVE_GETRANDOM",
-            //     "HAVE_LINUX_COMPATIBLE_GETRANDOM",
-            //     "HAVE_SYS_RANDOM_H",
-            //     "USE_ESP32",
-            //     "USE_ESP32_FRAMEWORK_ESP_IDF",
-            //     "USE_ESP32_VARIANT_ESP32",
-            //     "USE_ESP_IDF"
-            // ],
             "cStandard": "gnu99",
             "cppStandard": "gnu++23",
             "compilerPath": "${HOME}/.platformio/packages/toolchain-riscv32-esp@12.2.0+20230208/bin/riscv32-esp-elf-gcc",
