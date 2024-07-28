@@ -18,7 +18,7 @@ namespace esphome
             hap_reset_pairings();
         }
 
-        HAPRootComponent::HAPRootComponent()
+        HAPRootComponent::HAPRootComponent(const char* setup_code) : setup_code(setup_code)
         {
             ESP_LOGI(TAG, "[APP] Free memory: %" PRIu32 " bytes", esp_get_free_heap_size());
             ESP_LOGI(TAG, "[APP] IDF version: %s", esp_get_idf_version());
@@ -65,7 +65,7 @@ namespace esphome
             /* Add the Accessory to the HomeKit Database */
             hap_add_accessory(accessory);
             /* Unique Setup code of the format xxx-xx-xxx. Default: 111-22-333 */
-            hap_set_setup_code("111-22-333");
+            hap_set_setup_code(setup_code);
             /* Unique four character Setup Id. Default: ES32 */
             hap_set_setup_id("ES32");
         }

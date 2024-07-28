@@ -11,30 +11,18 @@ MULTI_CONF = True
 
 homekit_ns = cg.esphome_ns.namespace('homekit')
 HAPRootComponent = homekit_ns.class_('HAPRootComponent', cg.Component)
-TemperatureUnits = homekit_ns.enum("TemperatureUnits")
 CONF_HAP_ID = "hap_id"
-
-TEMP_UNITS = {
-    "CELSIUS": TemperatureUnits.CELSIUS,
-    "FAHRENHEIT": TemperatureUnits.FAHRENHEIT
-}
-
-entities_list = {
-    cv.Optional("light"): cv.ensure_list(cv.use_id(light.LightState)),
-    cv.Optional("lock"):  cv.ensure_list(cv.use_id(lock.Lock)),
-    cv.Optional("sensor"):  cv.ensure_list(cv.use_id(sensor.Sensor)),
-    cv.Optional("switch"):  cv.ensure_list(cv.use_id(switch.Switch))
-}
 
 CONFIG_SCHEMA = cv.All(cv.Schema({
     cv.GenerateID(): cv.declare_id(HAPRootComponent),
-    cv.Optional(CONF_PORT, default=32042): cv.port
+    cv.Optional(CONF_PORT, default=32042): cv.port,
+    cv.Optional("setup_code", default="159-35-728"): cv.string_strict
 }).extend(cv.COMPONENT_SCHEMA),
 cv.only_on([PLATFORM_ESP32]),
 cv.only_with_esp_idf)
 
 async def to_code(config):
-    cg.add_define("CONFIG_ESP_MFI_DEBUG_ENABLE")
+    # cg.add_define("CONFIG_ESP_MFI_DEBUG_ENABLE")
     add_idf_component(
         name="libsodium",
         repo="https://github.com/espressif/idf-extra-components.git",
@@ -48,7 +36,7 @@ async def to_code(config):
         ref="master",
         components=["esp_hap_core", "esp_hap_apple_profiles", "esp_hap_extras", "esp_hap_platform", "hkdf-sha", "mu_srp"],
     )
-    var = cg.new_Pvariable(config[CONF_ID])
+    var = cg.new_Pvariable(config[CONF_ID], config["setup_code"])
     if CONF_PORT in config:
         add_idf_sdkconfig_option("CONFIG_HAP_HTTP_SERVER_PORT", config[CONF_PORT])
     await cg.register_component(var, config)

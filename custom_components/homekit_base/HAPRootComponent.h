@@ -24,12 +24,12 @@ namespace homekit {
   #endif
   private:
     static constexpr const char* TAG = "HAPRootComponent";
-    std::string hostName;
+    std::string setup_code;
     bool exposeAll = true;
   public:
     float get_setup_priority() const override { return setup_priority::AFTER_WIFI; }
     void factory_reset();
-    HAPRootComponent();
+    HAPRootComponent(const char* setup_code);
     void setup() override;
     void loop() override;
     void dump_config() override;
