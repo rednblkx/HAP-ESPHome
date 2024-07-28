@@ -257,9 +257,9 @@ std::vector<uint8_t> PN532::inDataExchange(const std::vector<uint8_t>& data) {
   int timeout = 0;
   while (this->read_ready_(true) != pn532::PN532ReadReady::READY) { timeout++; delay(1); if (timeout > 250) break; }
 
-  std::vector<uint8_t> buffer;
+  std::vector<uint8_t> buffer(0);
   if (!this->read_response(PN532_COMMAND_INDATAEXCHANGE, buffer)) {
-    ESP_LOGE(TAG, "Error getting version");
+    ESP_LOGE(TAG, "Error getting response");
     // this->mark_failed();
     return std::vector<uint8_t>();
   }

@@ -109,7 +109,6 @@ spi:
   mosi_pin: 6
 
 pn532_spi:
-  # - platform: lock_nfc
   id: nfc_spi_module
   cs_pin: 7
     # update_interval: 1s
@@ -151,5 +150,5 @@ homekit:
       nfc_id: nfc_spi_module
 
 logger:
-  hardware_uart: UART0
-  level: DEBUG
+  # hardware_uart: UART0
+  level: VERBOSE

@@ -125,9 +125,6 @@ namespace esphome
               issuer.issuer_id = id;
               issuer.issuer_pk.insert(issuer.issuer_pk.begin(), ctrl->info.ltpk, ctrl->info.ltpk + 32);
               readerData.issuers.emplace_back(issuer);
-              // memcpy(readerData.issuers[readerData.issuers_count].issuer_id, id.data(), 8);
-              // memcpy(readerData.issuers[readerData.issuers_count].issuer_pk, ctrl->info.ltpk, 32);
-              // readerData.issuers_count++;
               std::vector<uint8_t> cborBuf;
               jsoncons::msgpack::encode_msgpack(readerData, cborBuf);
               esp_err_t set_nvs = nvs_set_blob(savedHKdata, "READERDATA", cborBuf.data(), cborBuf.size());
@@ -211,8 +208,14 @@ namespace esphome
             return true;
             };
           auto versions = ctx->inDataExchange({ 0x00, 0xA4, 0x04, 0x00, 0x07, 0xA0, 0x00, 0x00, 0x08, 0x58, 0x01, 0x01, 0x0 });
-          HKAuthenticationContext authCtx(lambda, readerData, savedHKdata);
-          authCtx.authenticate(KeyFlow(0));
+          if (versions.size() > 0) {
+            ESP_LOGI(TAG, "HK SUPPORTED VERSIONS: %s", format_hex_pretty(versions).c_str());
+            if (versions.data()[versions.size() - 2] == 0x90 && versions.data()[versions.size() - 1] == 0x0) {
+              HKAuthenticationContext authCtx(lambda, readerData, savedHKdata);
+              authCtx.authenticate(KeyFlow(0));
+            }
+            else ESP_LOGI(TAG, "Invalid response for HK");
+          }
           });
         automation_id_3->add_actions({lambdaaction_id_3});
       }
