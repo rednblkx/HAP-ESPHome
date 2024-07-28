@@ -38,8 +38,8 @@ namespace esphome
       void add_light(light::LightState* lightPtr);
       #endif
       #ifdef USE_LOCK
-      std::vector<lock::Lock*> locks;
-      LockEntity* lockCtx;
+      std::vector<LockEntity*> locks;
+      // LockEntity* lockCtx;
       void add_lock(lock::Lock* lockPtr);
       #endif
       #ifdef USE_HOMEKEY

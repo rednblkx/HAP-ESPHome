@@ -7,6 +7,7 @@ namespace esphome
     readerData_t LockEntity::readerData;
     nvs_handle LockEntity::savedHKdata;
     pn532::PN532* LockEntity::nfc_ctx;
+    // std::function<void(std::string issuerId, std::string endpointId)> LockEntity::onSuccess_HK;
       #ifdef USE_HOMEKEY
       int LockEntity::nfcAccess_write(hap_write_data_t write_data[], int count, void* serv_priv, void* write_priv) {
         LockEntity* parent = (LockEntity*)serv_priv;
@@ -25,7 +26,7 @@ namespace esphome
                 auto tlv_rx_data = std::vector<uint8_t>(buf.buf, buf.buf + buf.buflen);
                 // esp_log_buffer_hex_internal(TAG, tlv_rx_data.data(), tlv_rx_data.size(), ESP_LOG_INFO);
                 ESP_LOGD(TAG, "TLV RX DATA: %s SIZE: %d", utils::bufToHexString(tlv_rx_data.data(), tlv_rx_data.size(), true).c_str(), tlv_rx_data.size());
-                HK_HomeKit ctx(readerData, parent->savedHKdata, "READERDATA", tlv_rx_data);
+                HK_HomeKit ctx(parent->readerData, parent->savedHKdata, "READERDATA", tlv_rx_data);
                 auto result = ctx.processResult();
                 memcpy(parent->tlv8_data, result.data(), result.size());
                 // if (strlen((const char*)readerData.reader_group_id) > 0) {
@@ -164,8 +165,12 @@ namespace esphome
           // }
         }
       }
-      LockEntity::LockEntity() {
+      LockEntity::LockEntity(lock::Lock* lockPtr) : lockPtr(lockPtr) {
       #ifdef USE_HOMEKEY
+        onSuccess_HK = [](std::string issuer, std::string endId) {
+          ESP_LOGI(TAG, "IssuerID: %s", issuer.c_str());
+          ESP_LOGI(TAG, "EndpointID: %s", endId.c_str());
+          };
         auto t = nvs_open("HK_DATA", NVS_READWRITE, &savedHKdata);
         LOG(I, "NVS_OPEN: %s", esp_err_to_name(t));
         size_t len = 0;
@@ -189,16 +194,27 @@ namespace esphome
         LOG(D, "ISSUERS COUNT: %d", readerData.issuers.size());
       #endif
       }
+      std::string hex_representation(const std::vector<uint8_t>& v) {
+        std::string hex_tmp;
+        for (auto x : v) {
+            std::ostringstream oss;
+            oss << std::hex << std::setw(2) << std::setfill('0') << (unsigned)x;
+            hex_tmp += oss.str();
+        }
+        return hex_tmp;
+      }
 
-      
       #ifdef USE_HOMEKEY
+      void LockEntity::set_onSuccess_fn(std::function<void(std::string issuerId, std::string endpointId)> onSuccess_HK) {
+        onSuccess_HK = onSuccess_HK;
+      }
       void LockEntity::set_nfc_ctx(pn532::PN532* ctx) {
         nfc_ctx = ctx;
         auto trigger = new nfc::NfcOnTagTrigger();
         ctx->register_ontag_trigger(trigger);
         auto automation_id_3 = new Automation<std::string, nfc::NfcTag>(trigger);
         auto lambdaaction_id_3 = new LambdaAction<std::string, nfc::NfcTag>([=](std::string x, nfc::NfcTag tag) -> void {
-          std::function<bool(uint8_t*, uint8_t, uint8_t*, uint16_t*, bool)> lambda = [ctx](uint8_t* send, uint8_t sendLen, uint8_t* res, uint16_t* resLen, bool ignoreLog) -> bool {
+          std::function<bool(uint8_t*, uint8_t, uint8_t*, uint16_t*, bool)> lambda = [=](uint8_t* send, uint8_t sendLen, uint8_t* res, uint16_t* resLen, bool ignoreLog) -> bool {
             auto data = ctx->inDataExchange(std::vector<uint8_t>(send, send + sendLen));
             data.erase(data.begin());
             ESP_LOGI(TAG, "%s", format_hex_pretty(data).c_str());
@@ -212,7 +228,10 @@ namespace esphome
             ESP_LOGI(TAG, "HK SUPPORTED VERSIONS: %s", format_hex_pretty(versions).c_str());
             if (versions.data()[versions.size() - 2] == 0x90 && versions.data()[versions.size() - 1] == 0x0) {
               HKAuthenticationContext authCtx(lambda, readerData, savedHKdata);
-              authCtx.authenticate(KeyFlow(0));
+              auto authResult = authCtx.authenticate(KeyFlow(kFlowFAST));
+              if (std::get<0>(authResult).size() > 0 && std::get<2>(authResult) != kFlowFailed) {
+                onSuccess_HK(hex_representation(std::get<0>(authResult)), hex_representation(std::get<1>(authResult)));
+              }
             }
             else ESP_LOGI(TAG, "Invalid response for HK");
           }
@@ -224,7 +243,7 @@ namespace esphome
 
 
       
-      void LockEntity::setup(lock::Lock* lockPtr) {
+      void LockEntity::setup() {
         hap_register_event_handler(hap_event_handler);
         hap_acc_cfg_t acc_cfg = {
             .model = "ESP-LOCK",
@@ -233,7 +252,7 @@ namespace esphome
             .hw_rev = NULL,
             .pv = "1.1.0",
             .cid = HAP_CID_BRIDGE,
-            .identify_routine = acc_identify,
+            // .identify_routine = acc_identify,
         };
         hap_acc_t* accessory = nullptr;
         hap_serv_t* lockMechanism = nullptr;
@@ -265,7 +284,7 @@ namespace esphome
         /* Add the Accessory to the HomeKit Database */
         hap_add_bridged_accessory(accessory, hap_get_unique_aid(std::to_string(lockPtr->get_object_id_hash()).c_str()));
         if (!lockPtr->is_internal())
-          lockPtr->add_on_state_callback([this, lockPtr]() { this->on_lock_update(lockPtr); });
+          lockPtr->add_on_state_callback([this]() { this->on_lock_update(lockPtr); });
       }
   }
 }

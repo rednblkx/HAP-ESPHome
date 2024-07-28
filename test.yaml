@@ -135,7 +135,8 @@ button:
     factory_reset:
       name: "Reset Homekit pairings"
 
-# homekit_base:
+homekit_base:
+  # setup_code: '111222333'
 
 homekit:
   # light:

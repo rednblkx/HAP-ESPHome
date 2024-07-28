@@ -25,7 +25,7 @@ CONFIG_SCHEMA = cv.All(cv.Schema({
     cv.GenerateID() : cv.declare_id(HAPAccessory),
     cv.Optional("light"): cv.ensure_list({cv.Required(CONF_ID):  cv.use_id(light.LightState)}),
     cv.Optional("lock"):  cv.ensure_list({cv.Required(CONF_ID): cv.use_id(lock.Lock), cv.Optional("nfc_id") : cv.use_id(pn532.PN532)}),
-    cv.Optional("sensor"):  cv.ensure_list({cv.Required(CONF_ID): cv.use_id(sensor.Sensor), cv.Optional("sensor_units", default="CELSIUS") : cv.enum(TEMP_UNITS)}),
+    cv.Optional("sensor"):  cv.ensure_list({cv.Required(CONF_ID): cv.use_id(sensor.Sensor), cv.Optional("temp_units", default="CELSIUS") : cv.enum(TEMP_UNITS)}),
     cv.Optional("switch"):  cv.ensure_list({cv.Required(CONF_ID): cv.use_id(switch.Switch)}),
     cv.Optional("climate"):  cv.ensure_list({cv.Required(CONF_ID): cv.use_id(climate.Climate)}),
 }).extend(cv.COMPONENT_SCHEMA),
@@ -40,7 +40,7 @@ async def to_code(config):
             cg.add(var.add_light(await cg.get_variable(l['id'])))
     if 'sensor' in config:
         for l in config["sensor"]:
-            cg.add(var.add_sensor(await cg.get_variable(l['id']), l['sensor_units']))
+            cg.add(var.add_sensor(await cg.get_variable(l['id']), l['temp_units']))
     if 'lock' in config:
         for l in config["lock"]:
             cg.add(var.add_lock(await cg.get_variable(l['id'])))

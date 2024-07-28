@@ -4,14 +4,14 @@ namespace esphome
   namespace homekit
   {
     HAPAccessory::HAPAccessory() {
-      #ifdef USE_LOCK
-      lockCtx = new LockEntity();
-      #endif
+      // #ifdef USE_LOCK
+      // lockCtx = new LockEntity();
+      // #endif
     }
     HAPAccessory::~HAPAccessory() {
-      #ifdef USE_LOCK
-      delete lockCtx;
-      #endif
+      // #ifdef USE_LOCK
+      // delete lockCtx;
+      // #endif
     }
     void HAPAccessory::setup() {
       #ifdef USE_LIGHT
@@ -22,11 +22,11 @@ namespace esphome
       #endif
       #ifdef USE_LOCK
       for (const auto v : locks) {
-        lockCtx->setup(v);
+        v->setup();
         #ifdef USE_HOMEKEY
-        if (nfc) {
-          lockCtx->set_nfc_ctx(nfc);
-        }
+        // if (nfc) {
+        //   v->set_nfc_ctx(nfc);
+        // }
         #endif
       }
       #endif
@@ -58,7 +58,9 @@ namespace esphome
     #endif
     #ifdef USE_LOCK
     void HAPAccessory::add_lock(lock::Lock* lockPtr) {
-      locks.push_back(lockPtr);
+      // locks.push_back(lockPtr);
+      auto lock = std::unique_ptr<LockEntity>(new LockEntity(lockPtr));
+      locks.emplace_back(lock.get());
     }
     #endif
     #ifdef USE_HOMEKEY

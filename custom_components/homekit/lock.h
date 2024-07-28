@@ -21,6 +21,7 @@ namespace esphome
     {
     private:
       static constexpr const char* TAG = "LockEntity";
+      lock::Lock* lockPtr;
       static nvs_handle savedHKdata;
       static readerData_t readerData;
       uint8_t tlv8_data[128];
@@ -35,6 +36,7 @@ namespace esphome
         .buf = 0,
         .buflen = 0
       };
+      std::function<void(std::string issuerId, std::string endpointId)> onSuccess_HK;
       #endif
       static int nfcAccess_write(hap_write_data_t write_data[], int count, void* serv_priv, void* write_priv);
       void on_lock_update(lock::Lock* obj);
@@ -44,9 +46,10 @@ namespace esphome
 
 
       public:
-      LockEntity();
-      void setup(lock::Lock* lockPtr);
-      static void set_nfc_ctx(pn532::PN532* ctx);
+      LockEntity(lock::Lock* lockPtr);
+      void setup();
+      void set_nfc_ctx(pn532::PN532* ctx);
+      void set_onSuccess_fn(std::function<void(std::string issuerId, std::string endpointId)> onSuccess_HK);
     };
   }
 }
