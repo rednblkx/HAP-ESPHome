@@ -25,7 +25,6 @@ namespace esphome
     {
     public:
       HAPAccessory();
-      ~HAPAccessory();
       float get_setup_priority() const override { return setup_priority::AFTER_WIFI - 1; }
       void setup() override;
       void loop() override;

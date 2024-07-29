@@ -7,7 +7,6 @@ namespace esphome
     readerData_t LockEntity::readerData;
     nvs_handle LockEntity::savedHKdata;
     pn532::PN532* LockEntity::nfc_ctx;
-    // std::function<void(std::string issuerId, std::string endpointId)> LockEntity::onSuccess_HK;
       #ifdef USE_HOMEKEY
       int LockEntity::nfcAccess_write(hap_write_data_t write_data[], int count, void* serv_priv, void* write_priv) {
         LockEntity* parent = (LockEntity*)serv_priv;
@@ -165,9 +164,10 @@ namespace esphome
           // }
         }
       }
-      LockEntity::LockEntity(lock::Lock* lockPtr) : lockPtr(lockPtr) {
+      LockEntity::LockEntity(lock::Lock* lockPtr) {
+        ptrToLock = lockPtr;
       #ifdef USE_HOMEKEY
-        onSuccess_HK = [](std::string issuer, std::string endId) {
+        onSuccess_HK = [=](std::string issuer, std::string endId) {
           ESP_LOGI(TAG, "IssuerID: %s", issuer.c_str());
           ESP_LOGI(TAG, "EndpointID: %s", endId.c_str());
           };
@@ -252,18 +252,18 @@ namespace esphome
             .hw_rev = NULL,
             .pv = "1.1.0",
             .cid = HAP_CID_BRIDGE,
-            // .identify_routine = acc_identify,
+            .identify_routine = acc_identify,
         };
         hap_acc_t* accessory = nullptr;
         hap_serv_t* lockMechanism = nullptr;
-        std::string accessory_name = lockPtr->get_name();
-        acc_cfg.name = accessory_name.data();
-        acc_cfg.serial_num = std::to_string(lockPtr->get_object_id_hash()).data();
+        std::string accessory_name = ptrToLock->get_name();
+        acc_cfg.name = strdup(accessory_name.c_str());
+        acc_cfg.serial_num = std::to_string(ptrToLock->get_object_id_hash()).data();
         accessory = hap_acc_create(&acc_cfg);
-        lockMechanism = hap_serv_lock_mechanism_create(lockPtr->state, lockPtr->state);
+        lockMechanism = hap_serv_lock_mechanism_create(ptrToLock->state, ptrToLock->state);
 
-        ESP_LOGI(TAG, "ID HASH: %lu", lockPtr->get_object_id_hash());
-        hap_serv_set_priv(lockMechanism, strdup(std::to_string(lockPtr->get_object_id_hash()).c_str()));
+        ESP_LOGI(TAG, "ID HASH: %lu", ptrToLock->get_object_id_hash());
+        hap_serv_set_priv(lockMechanism, strdup(std::to_string(ptrToLock->get_object_id_hash()).c_str()));
 
         /* Set the write callback for the service */
         hap_serv_set_write_cb(lockMechanism, lock_write);
@@ -282,9 +282,9 @@ namespace esphome
         #endif
 
         /* Add the Accessory to the HomeKit Database */
-        hap_add_bridged_accessory(accessory, hap_get_unique_aid(std::to_string(lockPtr->get_object_id_hash()).c_str()));
-        if (!lockPtr->is_internal())
-          lockPtr->add_on_state_callback([this]() { this->on_lock_update(lockPtr); });
+        hap_add_bridged_accessory(accessory, hap_get_unique_aid(std::to_string(ptrToLock->get_object_id_hash()).c_str()));
+        if (!ptrToLock->is_internal())
+          ptrToLock->add_on_state_callback([this]() { this->on_lock_update(ptrToLock); });
       }
   }
 }
