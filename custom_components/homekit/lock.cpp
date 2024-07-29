@@ -204,6 +204,9 @@ namespace esphome
       void LockEntity::register_onhk_trigger(HKAuthTrigger* trig) {
         triggers_onhk_.push_back(trig);
       }
+      void LockEntity::register_onhkfail_trigger(HKFailTrigger* trig) {
+        triggers_onhk_fail_.push_back(trig);
+      }
       void LockEntity::set_nfc_ctx(pn532::PN532* ctx) {
         nfc_ctx = ctx;
         auto trigger = new nfc::NfcOnTagTrigger();
@@ -231,17 +234,26 @@ namespace esphome
                   t->process(hex_representation(std::get<0>(authResult)), hex_representation(std::get<1>(authResult)));
                 }
               }
+              else {
+                for (auto &&t : triggers_onhk_fail_)
+                {
+                  t->process();
+                }
+              }
             }
-            else ESP_LOGI(TAG, "Invalid response for HK");
+            else {
+              for (auto &&t : triggers_onhk_fail_)
+              {
+                t->process();
+              }
+              ESP_LOGI(TAG, "Invalid response for HK");
+            }
           }
           });
         automation_id_3->add_actions({lambdaaction_id_3});
       }
       #endif
 
-
-
-      
       void LockEntity::setup() {
         hap_register_event_handler(hap_event_handler);
         hap_acc_cfg_t acc_cfg = {

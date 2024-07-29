@@ -38,6 +38,7 @@ namespace esphome
         .buflen = 0
       };
       std::vector<HKAuthTrigger *> triggers_onhk_;
+      std::vector<HKFailTrigger *> triggers_onhk_fail_;
       #endif
       static int nfcAccess_write(hap_write_data_t write_data[], int count, void* serv_priv, void* write_priv);
       void on_lock_update(lock::Lock* obj);
@@ -51,6 +52,7 @@ namespace esphome
       void setup();
       void set_nfc_ctx(pn532::PN532* ctx);
       void register_onhk_trigger(HKAuthTrigger* trig);
+      void register_onhkfail_trigger(HKFailTrigger* trig);
     };
   }
 }

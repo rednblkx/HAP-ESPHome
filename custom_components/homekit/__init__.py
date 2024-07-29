@@ -19,6 +19,9 @@ LockEntity = homekit_ns.class_('LockEntity')
 OnHkSuccessTrigger = homekit_ns.class_(
     "HKAuthTrigger", automation.Trigger.template(cg.std_string, cg.std_string)
 )
+OnHkFailTrigger = homekit_ns.class_(
+    "HKFailTrigger", automation.Trigger.template()
+)
 CONF_IDENTIFY_LAMBDA = "identify_fn"
 
 TEMP_UNITS = {
@@ -34,7 +37,13 @@ CONFIG_SCHEMA = cv.All(cv.Schema({
             {
                 cv.GenerateID(CONF_TRIGGER_ID): cv.declare_id(OnHkSuccessTrigger),
             }
-        ),}),
+        ),
+        cv.Optional("on_hk_fail"): automation.validate_automation(
+            {
+                cv.GenerateID(CONF_TRIGGER_ID): cv.declare_id(OnHkFailTrigger),
+            }
+        )
+        }),
     cv.Optional("sensor"):  cv.ensure_list({cv.Required(CONF_ID): cv.use_id(sensor.Sensor), cv.Optional("temp_units", default="CELSIUS") : cv.enum(TEMP_UNITS)}),
     cv.Optional("switch"):  cv.ensure_list({cv.Required(CONF_ID): cv.use_id(switch.Switch)}),
     cv.Optional("climate"):  cv.ensure_list({cv.Required(CONF_ID): cv.use_id(climate.Climate)}),
@@ -75,6 +84,12 @@ async def to_code(config):
                     cg.add(lock_entity.register_onhk_trigger(trigger))
                     await automation.build_automation(
                         trigger, [(cg.std_string, "x"), (cg.std_string, "y")], conf
+                    )
+                for conf in l.get("on_hk_fail", []):
+                    trigger = cg.new_Pvariable(conf[CONF_TRIGGER_ID])
+                    cg.add(lock_entity.register_onhkfail_trigger(trigger))
+                    await automation.build_automation(
+                        trigger, [], conf
                     )
     if "switch" in config:
         for l in config["switch"]:

@@ -153,6 +153,9 @@ homekit:
         lambda: |-
           ESP_LOGI("HEREHERE", "IssuerID: %s", x.c_str());
           ESP_LOGI("HEREHERE", "EndpointID: %s", y.c_str());
+      on_hk_fail:
+        lambda: |-
+          ESP_LOGI("GSDGSGS", "IT FAILED :(");
 
 logger:
   # hardware_uart: UART0

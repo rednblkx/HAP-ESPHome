@@ -7,5 +7,8 @@ namespace esphome
     void HKAuthTrigger::process(std::string issuerId, std::string endpointId) {
       this->trigger(issuerId, endpointId);
     }
+    void HKFailTrigger::process() {
+      this->trigger();
+    }
   }
 }

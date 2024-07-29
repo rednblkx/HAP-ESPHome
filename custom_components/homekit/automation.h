@@ -11,5 +11,10 @@ namespace esphome
     public:
       void process(std::string issuerId, std::string endpointId);
     };
+    class HKFailTrigger : public Trigger<>
+    {
+    public:
+      void process();
+    };
   }
 }
