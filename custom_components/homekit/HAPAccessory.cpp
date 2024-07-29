@@ -49,8 +49,9 @@ namespace esphome
     }
     #endif
     #ifdef USE_LOCK
-    void HAPAccessory::add_lock(lock::Lock* lockPtr) {
+    LockEntity* HAPAccessory::add_lock(lock::Lock* lockPtr) {
       locks.push_back(new LockEntity(lockPtr));
+      return locks.back();
     }
     #endif
     #ifdef USE_HOMEKEY

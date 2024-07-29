@@ -11,6 +11,7 @@
 #include <hkAuthContext.h>
 #include <esphome/components/pn532/pn532.h>
 #include <esphome/core/base_automation.h>
+#include "automation.h"
 #endif
 
 namespace esphome
@@ -36,7 +37,7 @@ namespace esphome
         .buf = 0,
         .buflen = 0
       };
-      std::function<void(std::string issuerId, std::string endpointId)> onSuccess_HK;
+      std::vector<HKAuthTrigger *> triggers_onhk_;
       #endif
       static int nfcAccess_write(hap_write_data_t write_data[], int count, void* serv_priv, void* write_priv);
       void on_lock_update(lock::Lock* obj);
@@ -49,7 +50,7 @@ namespace esphome
       LockEntity(lock::Lock* lockPtr);
       void setup();
       void set_nfc_ctx(pn532::PN532* ctx);
-      void set_onSuccess_fn(std::function<void(std::string issuerId, std::string endpointId)> onSuccess_HK);
+      void register_onhk_trigger(HKAuthTrigger* trig);
     };
   }
 }

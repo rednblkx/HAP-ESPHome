@@ -167,10 +167,6 @@ namespace esphome
       LockEntity::LockEntity(lock::Lock* lockPtr) {
         ptrToLock = lockPtr;
       #ifdef USE_HOMEKEY
-        onSuccess_HK = [=](std::string issuer, std::string endId) {
-          ESP_LOGI(TAG, "IssuerID: %s", issuer.c_str());
-          ESP_LOGI(TAG, "EndpointID: %s", endId.c_str());
-          };
         auto t = nvs_open("HK_DATA", NVS_READWRITE, &savedHKdata);
         LOG(I, "NVS_OPEN: %s", esp_err_to_name(t));
         size_t len = 0;
@@ -205,15 +201,15 @@ namespace esphome
       }
 
       #ifdef USE_HOMEKEY
-      void LockEntity::set_onSuccess_fn(std::function<void(std::string issuerId, std::string endpointId)> onSuccess_HK) {
-        onSuccess_HK = onSuccess_HK;
+      void LockEntity::register_onhk_trigger(HKAuthTrigger* trig) {
+        triggers_onhk_.push_back(trig);
       }
       void LockEntity::set_nfc_ctx(pn532::PN532* ctx) {
         nfc_ctx = ctx;
         auto trigger = new nfc::NfcOnTagTrigger();
         ctx->register_ontag_trigger(trigger);
         auto automation_id_3 = new Automation<std::string, nfc::NfcTag>(trigger);
-        auto lambdaaction_id_3 = new LambdaAction<std::string, nfc::NfcTag>([=](std::string x, nfc::NfcTag tag) -> void {
+        auto lambdaaction_id_3 = new LambdaAction<std::string, nfc::NfcTag>([this, ctx](std::string x, nfc::NfcTag tag) -> void {
           std::function<bool(uint8_t*, uint8_t, uint8_t*, uint16_t*, bool)> lambda = [=](uint8_t* send, uint8_t sendLen, uint8_t* res, uint16_t* resLen, bool ignoreLog) -> bool {
             auto data = ctx->inDataExchange(std::vector<uint8_t>(send, send + sendLen));
             data.erase(data.begin());
@@ -230,7 +226,10 @@ namespace esphome
               HKAuthenticationContext authCtx(lambda, readerData, savedHKdata);
               auto authResult = authCtx.authenticate(KeyFlow(kFlowFAST));
               if (std::get<0>(authResult).size() > 0 && std::get<2>(authResult) != kFlowFailed) {
-                onSuccess_HK(hex_representation(std::get<0>(authResult)), hex_representation(std::get<1>(authResult)));
+                for (auto &&t : triggers_onhk_)
+                {
+                  t->process(hex_representation(std::get<0>(authResult)), hex_representation(std::get<1>(authResult)));
+                }
               }
             }
             else ESP_LOGI(TAG, "Invalid response for HK");
@@ -246,11 +245,11 @@ namespace esphome
       void LockEntity::setup() {
         hap_register_event_handler(hap_event_handler);
         hap_acc_cfg_t acc_cfg = {
-            .model = "ESP-LOCK",
-            .manufacturer = "rednblkx",
-            .fw_rev = "0.1.0",
+            .model = strdup("ESP-LOCK"),
+            .manufacturer = strdup("rednblkx"),
+            .fw_rev = strdup("0.1.0"),
             .hw_rev = NULL,
-            .pv = "1.1.0",
+            .pv = strdup("1.1.0"),
             .cid = HAP_CID_BRIDGE,
             .identify_routine = acc_identify,
         };
@@ -275,7 +274,7 @@ namespace esphome
         hap_serv_t* nfcAccess = nullptr;
         hap_serv_t* lockManagement = nullptr;
         nfcAccess = hap_serv_nfc_access_create(0, &management, &nfcSupportedConf);
-        lockManagement = hap_serv_lock_management_create(&management, "1.0.0");
+        lockManagement = hap_serv_lock_management_create(&management, strdup("1.0.0"));
         hap_serv_set_priv(nfcAccess, this);
         hap_serv_set_write_cb(nfcAccess, nfcAccess_write);
         hap_acc_add_serv(accessory, nfcAccess);

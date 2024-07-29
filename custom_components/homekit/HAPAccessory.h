@@ -38,8 +38,7 @@ namespace esphome
       #endif
       #ifdef USE_LOCK
       std::vector<LockEntity*> locks;
-      // LockEntity* lockCtx;
-      void add_lock(lock::Lock* lockPtr);
+      LockEntity* add_lock(lock::Lock* lockPtr);
       #endif
       #ifdef USE_HOMEKEY
       void set_nfc_ctx(pn532::PN532* nfcCtx);

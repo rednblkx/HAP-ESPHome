@@ -149,6 +149,10 @@ homekit:
   lock:
     - id: this_lock
       nfc_id: nfc_spi_module
+      on_hk_success:
+        lambda: |-
+          ESP_LOGI("HEREHERE", "IssuerID: %s", x.c_str());
+          ESP_LOGI("HEREHERE", "EndpointID: %s", y.c_str());
 
 logger:
   # hardware_uart: UART0
