@@ -39,20 +39,22 @@ namespace esphome
       };
       std::vector<HKAuthTrigger *> triggers_onhk_;
       std::vector<HKFailTrigger *> triggers_onhk_fail_;
-      #endif
       static int nfcAccess_write(hap_write_data_t write_data[], int count, void* serv_priv, void* write_priv);
+      static void hap_event_handler(hap_event_t event, void* data);
+      #endif
       void on_lock_update(lock::Lock* obj);
       static int lock_write(hap_write_data_t write_data[], int count, void* serv_priv, void* write_priv);
-      static void hap_event_handler(hap_event_t event, void* data);
       static int acc_identify(hap_acc_t* ha);
 
 
       public:
       LockEntity(lock::Lock* lockPtr);
       void setup();
+      #ifdef USE_HOMEKEY
       void set_nfc_ctx(pn532::PN532* ctx);
       void register_onhk_trigger(HKAuthTrigger* trig);
       void register_onhkfail_trigger(HKFailTrigger* trig);
+      #endif
     };
   }
 }

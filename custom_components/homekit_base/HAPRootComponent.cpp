@@ -72,9 +72,10 @@ namespace esphome
 
         void HAPRootComponent::setup() {
             // hap_http_debug_enable();
-            hap_set_debug_level(HAP_DEBUG_LEVEL_INFO);
-            esp_log_level_set("HAP", ESP_LOG_INFO);
+            // hap_set_debug_level(HAP_DEBUG_LEVEL_INFO);
+            // esp_log_level_set("HAP", ESP_LOG_INFO);
             hap_start();
+            ESP_LOGI(TAG, "HAP Bridge started!");
         }
 
         void HAPRootComponent::loop() {

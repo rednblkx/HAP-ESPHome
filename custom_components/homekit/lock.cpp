@@ -10,10 +10,10 @@ namespace esphome
       #ifdef USE_HOMEKEY
       int LockEntity::nfcAccess_write(hap_write_data_t write_data[], int count, void* serv_priv, void* write_priv) {
         LockEntity* parent = (LockEntity*)serv_priv;
-        LOG(D, "PROVISIONED READER KEY: %s", utils::bufToHexString(parent->readerData.reader_sk.data(), parent->readerData.reader_sk.size(), true).c_str());
-        LOG(D, "READER PUBLIC KEY: %s", utils::bufToHexString(parent->readerData.reader_pk.data(), parent->readerData.reader_pk.size(), true).c_str());
-        LOG(D, "READER GROUP IDENTIFIER: %s", utils::bufToHexString(parent->readerData.reader_gid.data(), parent->readerData.reader_gid.size(), true).c_str());
-        LOG(D, "READER UNIQUE IDENTIFIER: %s", utils::bufToHexString(parent->readerData.reader_id.data(), parent->readerData.reader_id.size(), true).c_str());
+        LOG(I, "PROVISIONED READER KEY: %s", utils::bufToHexString(parent->readerData.reader_sk.data(), parent->readerData.reader_sk.size(), true).c_str());
+        LOG(I, "READER PUBLIC KEY: %s", utils::bufToHexString(parent->readerData.reader_pk.data(), parent->readerData.reader_pk.size(), true).c_str());
+        LOG(I, "READER GROUP IDENTIFIER: %s", utils::bufToHexString(parent->readerData.reader_gid.data(), parent->readerData.reader_gid.size(), true).c_str());
+        LOG(I, "READER UNIQUE IDENTIFIER: %s", utils::bufToHexString(parent->readerData.reader_id.data(), parent->readerData.reader_id.size(), true).c_str());
         int i, ret = HAP_SUCCESS;
           hap_write_data_t *write;
           for (i = 0; i < count; i++) {
@@ -43,65 +43,6 @@ namespace esphome
           }
           return ret;
       }
-      #endif
-
-      
-      void LockEntity::on_lock_update(lock::Lock* obj) {
-        ESP_LOGI("on_lock_update", "%s state: %s", obj->get_name().c_str(), lock_state_to_string(obj->state));
-        hap_acc_t* acc = hap_acc_get_by_aid(hap_get_unique_aid(std::to_string(obj->get_object_id_hash()).c_str()));
-          hap_serv_t* hs = hap_acc_get_serv_by_uuid(acc, HAP_SERV_UUID_LOCK_MECHANISM);
-        hap_char_t* current_state = hap_serv_get_char_by_uuid(hs, HAP_CHAR_UUID_LOCK_CURRENT_STATE);
-        hap_char_t* target_state = hap_serv_get_char_by_uuid(hs, HAP_CHAR_UUID_LOCK_TARGET_STATE);
-        hap_val_t c;
-        hap_val_t t;
-        if (obj->state == lock::LockState::LOCK_STATE_LOCKED || obj->state == lock::LockState::LOCK_STATE_UNLOCKED) {
-          c.i = obj->state % 2;
-          t.i = obj->state % 2;
-          hap_char_update_val(current_state, &c);
-          hap_char_update_val(target_state, &t);
-        }
-        else if (obj->state == lock::LockState::LOCK_STATE_LOCKING || obj->state == lock::LockState::LOCK_STATE_UNLOCKING) {
-          t.i = (obj->state % 5) % 3;
-          hap_char_update_val(target_state, &t);
-        }
-        else if (obj->state == lock::LockState::LOCK_STATE_JAMMED) {
-          c.i = obj->state;
-          hap_char_update_val(current_state, &c);
-        }
-        return;
-      }
-
-
-      int LockEntity::lock_write(hap_write_data_t write_data[], int count, void* serv_priv, void* write_priv) {
-        std::string key((char*)serv_priv);
-        ESP_LOGI("lock_write", "Write called for Accessory %s", (char*)serv_priv);
-        int i, ret = HAP_SUCCESS;
-        hap_write_data_t* write;
-        for (i = 0; i < count; i++) {
-          write = &write_data[i];
-          lock::Lock* obj = App.get_lock_by_key(static_cast<uint32_t>(std::stoul(key)));
-          if (!strcmp(hap_char_get_type_uuid(write->hc), HAP_CHAR_UUID_LOCK_TARGET_STATE)) {
-            ESP_LOGI("lock_write", "Target State req: %d", write->val.i);
-            hap_char_update_val(write->hc, &(write->val));
-            hap_char_t* c = hap_serv_get_char_by_uuid(hap_char_get_parent(write->hc), HAP_CHAR_UUID_LOCK_CURRENT_STATE);
-            ESP_LOGI("lock_write", "Current State: %d", hap_char_get_val(c)->i);
-            hap_char_update_val(c, &(write->val));
-            write->val.i ? obj->lock() : obj->unlock();
-            *(write->status) = HAP_STATUS_SUCCESS;
-          }
-          else {
-            *(write->status) = HAP_STATUS_RES_ABSENT;
-          }
-        }
-        return ret;
-      }
-
-
-      int LockEntity::acc_identify(hap_acc_t* ha) {
-        ESP_LOGI(TAG, "Accessory identified");
-        return HAP_SUCCESS;
-      }
-
 
       void LockEntity::hap_event_handler(hap_event_t event, void* data) {
         if (event == HAP_EVENT_CTRL_PAIRED) {
@@ -164,6 +105,65 @@ namespace esphome
           // }
         }
       }
+      #endif
+
+      
+      void LockEntity::on_lock_update(lock::Lock* obj) {
+        ESP_LOGI("on_lock_update", "%s state: %s", obj->get_name().c_str(), lock_state_to_string(obj->state));
+        hap_acc_t* acc = hap_acc_get_by_aid(hap_get_unique_aid(std::to_string(obj->get_object_id_hash()).c_str()));
+          hap_serv_t* hs = hap_acc_get_serv_by_uuid(acc, HAP_SERV_UUID_LOCK_MECHANISM);
+        hap_char_t* current_state = hap_serv_get_char_by_uuid(hs, HAP_CHAR_UUID_LOCK_CURRENT_STATE);
+        hap_char_t* target_state = hap_serv_get_char_by_uuid(hs, HAP_CHAR_UUID_LOCK_TARGET_STATE);
+        hap_val_t c;
+        hap_val_t t;
+        if (obj->state == lock::LockState::LOCK_STATE_LOCKED || obj->state == lock::LockState::LOCK_STATE_UNLOCKED) {
+          c.i = obj->state % 2;
+          t.i = obj->state % 2;
+          hap_char_update_val(current_state, &c);
+          hap_char_update_val(target_state, &t);
+        }
+        else if (obj->state == lock::LockState::LOCK_STATE_LOCKING || obj->state == lock::LockState::LOCK_STATE_UNLOCKING) {
+          t.i = (obj->state % 5) % 3;
+          hap_char_update_val(target_state, &t);
+        }
+        else if (obj->state == lock::LockState::LOCK_STATE_JAMMED) {
+          c.i = obj->state;
+          hap_char_update_val(current_state, &c);
+        }
+        return;
+      }
+
+
+      int LockEntity::lock_write(hap_write_data_t write_data[], int count, void* serv_priv, void* write_priv) {
+        std::string key((char*)serv_priv);
+        ESP_LOGI("lock_write", "Write called for Accessory %s", (char*)serv_priv);
+        int i, ret = HAP_SUCCESS;
+        hap_write_data_t* write;
+        for (i = 0; i < count; i++) {
+          write = &write_data[i];
+          lock::Lock* obj = App.get_lock_by_key(static_cast<uint32_t>(std::stoul(key)));
+          if (!strcmp(hap_char_get_type_uuid(write->hc), HAP_CHAR_UUID_LOCK_TARGET_STATE)) {
+            ESP_LOGI("lock_write", "Target State req: %d", write->val.i);
+            hap_char_update_val(write->hc, &(write->val));
+            hap_char_t* c = hap_serv_get_char_by_uuid(hap_char_get_parent(write->hc), HAP_CHAR_UUID_LOCK_CURRENT_STATE);
+            ESP_LOGI("lock_write", "Current State: %d", hap_char_get_val(c)->i);
+            hap_char_update_val(c, &(write->val));
+            write->val.i ? obj->lock() : obj->unlock();
+            *(write->status) = HAP_STATUS_SUCCESS;
+          }
+          else {
+            *(write->status) = HAP_STATUS_RES_ABSENT;
+          }
+        }
+        return ret;
+      }
+
+
+      int LockEntity::acc_identify(hap_acc_t* ha) {
+        ESP_LOGI(TAG, "Accessory identified");
+        return HAP_SUCCESS;
+      }
+
       LockEntity::LockEntity(lock::Lock* lockPtr) {
         ptrToLock = lockPtr;
       #ifdef USE_HOMEKEY
@@ -255,7 +255,6 @@ namespace esphome
       #endif
 
       void LockEntity::setup() {
-        hap_register_event_handler(hap_event_handler);
         hap_acc_cfg_t acc_cfg = {
             .model = strdup("ESP-LOCK"),
             .manufacturer = strdup("rednblkx"),
@@ -273,7 +272,7 @@ namespace esphome
         accessory = hap_acc_create(&acc_cfg);
         lockMechanism = hap_serv_lock_mechanism_create(ptrToLock->state, ptrToLock->state);
 
-        ESP_LOGI(TAG, "ID HASH: %lu", ptrToLock->get_object_id_hash());
+        ESP_LOGD(TAG, "ID HASH: %lu", ptrToLock->get_object_id_hash());
         hap_serv_set_priv(lockMechanism, strdup(std::to_string(ptrToLock->get_object_id_hash()).c_str()));
 
         /* Set the write callback for the service */
@@ -283,6 +282,7 @@ namespace esphome
         hap_acc_add_serv(accessory, lockMechanism);
 
         #ifdef USE_HOMEKEY
+        hap_register_event_handler(hap_event_handler);
         hap_serv_t* nfcAccess = nullptr;
         hap_serv_t* lockManagement = nullptr;
         nfcAccess = hap_serv_nfc_access_create(0, &management, &nfcSupportedConf);
@@ -296,6 +296,8 @@ namespace esphome
         hap_add_bridged_accessory(accessory, hap_get_unique_aid(std::to_string(ptrToLock->get_object_id_hash()).c_str()));
         if (!ptrToLock->is_internal())
           ptrToLock->add_on_state_callback([this]() { this->on_lock_update(ptrToLock); });
+
+        ESP_LOGI(TAG, "Lock '%s' linked to HomeKit", accessory_name.c_str());
       }
   }
 }

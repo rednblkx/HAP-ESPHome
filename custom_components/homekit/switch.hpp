@@ -70,10 +70,10 @@ namespace esphome
         acc_cfg.serial_num = std::to_string(switchPtr->get_object_id_hash()).data();
         /* Create accessory object */
         accessory = hap_acc_create(&acc_cfg);
-        /* Create the switch Service. Include the "name" since this is a user visible service  */
+        /* Create the switch Service. */
         service = hap_serv_switch_create(switchPtr->state);
 
-        ESP_LOGI(TAG, "ID HASH: %lu", switchPtr->get_object_id_hash());
+        ESP_LOGD(TAG, "ID HASH: %lu", switchPtr->get_object_id_hash());
         hap_serv_set_priv(service, strdup(std::to_string(switchPtr->get_object_id_hash()).c_str()));
 
         /* Set the write callback for the service */
@@ -86,6 +86,7 @@ namespace esphome
         hap_add_bridged_accessory(accessory, hap_get_unique_aid(std::to_string(switchPtr->get_object_id_hash()).c_str()));
         if (!switchPtr->is_internal())
           switchPtr->add_on_state_callback([this, switchPtr](bool v) { this->on_switch_update(switchPtr, v); });
+        ESP_LOGI(TAG, "Switch '%s' linked to HomeKit", accessory_name.c_str());
       }
     };
   }

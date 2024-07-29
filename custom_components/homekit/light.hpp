@@ -171,7 +171,7 @@ namespace esphome
         if (lightPtr->get_traits().supports_color_capability(light::ColorCapability::COLOR_TEMPERATURE)) {
           hap_serv_add_char(service, hap_char_color_temperature_create(lightPtr->current_values.get_color_temperature()));
         }
-        ESP_LOGI(TAG, "ID HASH: %lu", lightPtr->get_object_id_hash());
+        ESP_LOGD(TAG, "ID HASH: %lu", lightPtr->get_object_id_hash());
         hap_serv_set_priv(service, strdup(std::to_string(lightPtr->get_object_id_hash()).c_str()));
 
         /* Set the write callback for the service */
@@ -185,6 +185,7 @@ namespace esphome
         if (!lightPtr->is_internal())
           lightPtr->add_new_target_state_reached_callback([this]() { this->on_light_update(lightPtr); });
 
+        ESP_LOGI(TAG, "Light '%s' linked to HomeKit", accessory_name.c_str());
       }
     };
   }

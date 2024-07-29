@@ -93,7 +93,7 @@ namespace esphome
           acc_cfg.name = accessory_name.data();
           acc_cfg.serial_num = std::to_string(sensorPtr->get_object_id_hash()).data();
           accessory = hap_acc_create(&acc_cfg);
-          ESP_LOGI(TAG, "ID HASH: %lu", sensorPtr->get_object_id_hash());
+          ESP_LOGD(TAG, "ID HASH: %lu", sensorPtr->get_object_id_hash());
           hap_serv_set_priv(service, strdup(std::to_string(sensorPtr->get_object_id_hash()).c_str()));
 
           /* Set the write callback for the service */
@@ -107,6 +107,7 @@ namespace esphome
           hap_add_bridged_accessory(accessory, hap_get_unique_aid(std::to_string(sensorPtr->get_object_id_hash()).c_str()));
           if (!sensorPtr->is_internal())
             sensorPtr->add_on_state_callback([this, sensorPtr](float v) { this->on_sensor_update(sensorPtr, v); });
+          ESP_LOGI(TAG, "Sensor '%s' linked to HomeKit", accessory_name.c_str());
         }
       }
     };
