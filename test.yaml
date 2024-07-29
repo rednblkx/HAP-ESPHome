@@ -14,23 +14,6 @@ api:
 web_server:
   port: 8080
 
-# light:
-#   - platform: esp32_rmt_led_strip
-#     id: test_light
-#     rgb_order: GRB
-#     pin: GPIO8
-#     num_leds: 1
-#     rmt_channel: 0
-#     chipset: ws2812
-#     name: "My Light"
-#     restore_mode: RESTORE_DEFAULT_OFF
-
-  # - platform: binary
-  #   id: desk_light
-  #   name: "Desk Lamp"
-  #   output: simple_led
-  #   restore_mode: RESTORE_DEFAULT_OFF
-
 output:
   - platform: gpio
     pin: GPIO3
@@ -135,12 +118,29 @@ button:
     factory_reset:
       name: "Reset Homekit pairings"
 
+light:
+  - platform: esp32_rmt_led_strip
+    id: test_light
+    rgb_order: GRB
+    pin: GPIO8
+    num_leds: 1
+    rmt_channel: 0
+    chipset: ws2812
+    name: "My Light"
+    restore_mode: RESTORE_DEFAULT_OFF
+
+  # - platform: binary
+  #   id: desk_light
+  #   name: "Desk Lamp"
+  #   output: simple_led
+  #   restore_mode: RESTORE_DEFAULT_OFF
+
 homekit_base:
-  # setup_code: '111222333'
+  setup_code: '159-35-728'
 
 homekit:
-  # light:
-  #   - id: test_light
+  light:
+    - id: test_light
   # sensor:
   #   - id: my_sensor
   #   - id: my_sensor_second
@@ -153,10 +153,11 @@ homekit:
         lambda: |-
           ESP_LOGI("HEREHERE", "IssuerID: %s", x.c_str());
           ESP_LOGI("HEREHERE", "EndpointID: %s", y.c_str());
+          id(test_light).toggle().perform();
       on_hk_fail:
         lambda: |-
           ESP_LOGI("GSDGSGS", "IT FAILED :(");
 
 logger:
   # hardware_uart: UART0
-  level: VERBOSE
+  level: DEBUG
