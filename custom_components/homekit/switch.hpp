@@ -14,6 +14,7 @@ namespace esphome
     {
     private:
       static constexpr const char* TAG = "SwitchEntity";
+      switch_::Switch* switchPtr;
       static int switch_write(hap_write_data_t write_data[], int count, void* serv_priv, void* write_priv) {
         std::string key((char*)serv_priv);
         ESP_LOGI(TAG, "Write called for Accessory %s", (char*)serv_priv);
@@ -51,8 +52,8 @@ namespace esphome
         return HAP_SUCCESS;
       }
     public:
-      SwitchEntity() {}
-      void setup(switch_::Switch* switchPtr) {
+      SwitchEntity(switch_::Switch* switchPtr): switchPtr(switchPtr) {}
+      void setup() {
         hap_acc_cfg_t acc_cfg = {
             .model = "ESP-Switch",
             .manufacturer = "rednblkx",

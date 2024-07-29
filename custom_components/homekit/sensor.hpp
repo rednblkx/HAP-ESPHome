@@ -14,6 +14,7 @@ namespace esphome
     {
     private:
       static constexpr const char* TAG = "SensorEntity";
+      sensor::Sensor* sensorPtr;
       void on_sensor_update(sensor::Sensor* obj, float v) {
         ESP_LOGI(TAG, "%s value: %.2f", obj->get_name().c_str(), v);
         hap_acc_t* acc = hap_acc_get_by_aid(hap_get_unique_aid(std::to_string(obj->get_object_id_hash()).c_str()));
@@ -46,8 +47,8 @@ namespace esphome
         return HAP_SUCCESS;
       }
     public:
-      SensorEntity() {}
-      void setup(sensor::Sensor* sensorPtr) {
+      SensorEntity(sensor::Sensor* sensorPtr): sensorPtr(sensorPtr) {}
+      void setup() {
         hap_serv_t* service = nullptr;
 
         std::string device_class = sensorPtr->get_device_class();

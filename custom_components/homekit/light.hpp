@@ -14,7 +14,7 @@ namespace esphome
     {
     private:
       static constexpr const char* TAG = "LightEntity";
-      std::vector<light::LightState*> included;
+      light::LightState* lightPtr;
       static int light_write(hap_write_data_t write_data[], int count, void* serv_priv, void* write_priv) {
         std::string key((char*)serv_priv);
         ESP_LOGI(TAG, "Write called for Accessory %s", (char*)serv_priv);
@@ -138,8 +138,8 @@ namespace esphome
         return HAP_SUCCESS;
       }
     public:
-      LightEntity() {}
-      void setup(light::LightState* lightPtr) {
+      LightEntity(light::LightState* lightPtr) : lightPtr(lightPtr) {}
+      void setup() {
         hap_acc_cfg_t acc_cfg = {
             .model = "ESP-LIGHT",
             .manufacturer = "rednblkx",
@@ -183,7 +183,8 @@ namespace esphome
         /* Add the Accessory to the HomeKit Database */
         hap_add_bridged_accessory(accessory, hap_get_unique_aid(std::to_string(lightPtr->get_object_id_hash()).c_str()));
         if (!lightPtr->is_internal())
-          lightPtr->add_new_target_state_reached_callback([this, lightPtr]() { this->on_light_update(lightPtr); });
+          lightPtr->add_new_target_state_reached_callback([this]() { this->on_light_update(lightPtr); });
+
       }
     };
   }
