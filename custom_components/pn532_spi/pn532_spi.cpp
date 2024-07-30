@@ -91,15 +91,30 @@ bool PN532Spi::read_response(uint8_t command, std::vector<uint8_t> &data) {
                       header[5] == 0x7F &&
                       header[6] == 0x81);
 
-  if (!valid_header && !error_frame) {
+  bool extended_frame = (header[3] == 0xFF && header[4] == 0xFF);
+
+  if (!valid_header && !error_frame && !extended_frame) {
     ESP_LOGV(TAG, "read data invalid header!");
     return false;
   }
 
+
   // full length of message, including command response
-  uint8_t full_len = header[3];
+  uint16_t full_len = header[3];
+  if (extended_frame) {
+    ESP_LOGV(TAG, "Abnormal length and checksum, possible Extended Frame");
+    header.resize(10);
+    this->read_array(header.data() + 7, 3);
+    ESP_LOGV(TAG, "EF: Header data: %s", format_hex_pretty(header).c_str());
+    if ((uint8_t)(header[5] + header[6] + header[7]) != 0) {
+      ESP_LOGV(TAG, "EF: read data invalid header!");
+      this->disable();
+      return false;
+    }
+    full_len = ((((uint16_t)header[5]) << 8) | header[6]);
+  }
   // length of data, excluding command response
-  uint8_t len = full_len - 1;
+  uint16_t len = full_len - 1;
   if (full_len == 0)
     len = 0;
 
@@ -112,6 +127,9 @@ bool PN532Spi::read_response(uint8_t command, std::vector<uint8_t> &data) {
   ESP_LOGV(TAG, "Response data: %s", format_hex_pretty(data).c_str());
 
   uint8_t checksum = header[5] + header[6];  // TFI + Command response code
+  if (extended_frame) {
+    checksum = header[8] + header[9];
+  }
   for (int i = 0; i < len - 1; i++) {
     uint8_t dat = data[i];
     checksum += dat;
