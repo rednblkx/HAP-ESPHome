@@ -19,7 +19,7 @@ def hk_setup_code(value):
     value = cv.string_strict(value)
     if not value:
         return value
-    if re.match("^[\d]{3}-[\d]{2}-[\d]{3}$", value):
+    if re.match("^[\\d]{3}-[\\d]{2}-[\\d]{3}$", value):
         return value
     raise cv.Invalid(
         'Setup code must match the format XXX-XX-XXX'
