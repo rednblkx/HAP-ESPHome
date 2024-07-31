@@ -1,0 +1,64 @@
+esphome:
+    name: homekey-test
+
+wifi:
+  ssid: !secret wifi_ssid
+  password: !secret wifi_password
+
+lock:
+  - platform: template
+    id: "this_lock"
+    name: "Main Lock"
+    optimistic: True
+    on_lock:
+    - logger.log: "Door Locked!"
+    on_unlock:
+    - logger.log: "Door Unlocked!"
+
+external_components:
+  - source:
+      type: local
+      path: custom_components
+
+spi:
+  clk_pin: 18
+  miso_pin: 19
+  mosi_pin: 23
+
+pn532_spi:
+  cs_pin: 5
+
+esp32:
+  board: esp32dev
+  flash_size: 4MB
+  framework:
+    type: esp-idf
+    version: 5.2.1
+    platform_version: 6.7.0
+    sdkconfig_options:
+      CONFIG_COMPILER_OPTIMIZATION_SIZE: y
+      CONFIG_LWIP_MAX_SOCKETS: "16"
+      CONFIG_NEWLIB_NANO_FORMAT: y
+      CONFIG_LOG_DEFAULT_LEVEL_ERROR: y
+      CONFIG_LOG_DEFAULT_LEVEL: "1"
+      CONFIG_LOG_MAXIMUM_LEVEL_INFO: y
+      CONFIG_LOG_MAXIMUM_LEVEL: "3"
+      CONFIG_MBEDTLS_HKDF_C: y
+
+homekit_base:
+  setup_code: '159-35-728'
+
+homekit:
+  lock:
+    - id: this_lock
+      nfc_id: nfc_spi_module
+      on_hk_success:
+        lambda: |-
+          ESP_LOGI("HEREHERE", "IssuerID: %s", x.c_str());
+          ESP_LOGI("HEREHERE", "EndpointID: %s", y.c_str());
+      on_hk_fail:
+        lambda: |-
+          ESP_LOGI("GSDGSGS", "IT FAILED :(");
+
+logger:
+  level: DEBUG
