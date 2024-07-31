@@ -30,6 +30,7 @@ spi:
 pn532_spi:
   id: nfc_spi_module
   cs_pin: 7
+  update_interval: 500ms
 
 esp32:
   board: esp32-c3-devkitm-1

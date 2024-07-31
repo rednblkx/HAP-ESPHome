@@ -81,11 +81,6 @@ external_components:
       type: local
       path: custom_components
 
-# lock_nfc:
-#   id: homekey_nfc
-# #   cs_pin: 7
-#   nfc_id: nfc_spi_module
-
 spi:
   clk_pin: 4
   miso_pin: 5
@@ -94,7 +89,7 @@ spi:
 pn532_spi:
   id: nfc_spi_module
   cs_pin: 7
-    # update_interval: 1s
+  update_interval: 500ms
 
 esp32:
   board: esp32-c3-devkitm-1
@@ -112,6 +107,22 @@ esp32:
       CONFIG_LOG_MAXIMUM_LEVEL_INFO: y
       CONFIG_LOG_MAXIMUM_LEVEL: "3"
       CONFIG_MBEDTLS_HKDF_C: y
+
+homekit_base:
+  setup_code: '159-35-728'
+
+homekit:
+  lock:
+    - id: this_lock
+      nfc_id: nfc_spi_module
+      on_hk_success:
+        lambda: |-
+          ESP_LOGI("HEREHERE", "IssuerID: %s", x.c_str());
+          ESP_LOGI("HEREHERE", "EndpointID: %s", y.c_str());
+          id(test_light).toggle().perform();
+      on_hk_fail:
+        lambda: |-
+          ESP_LOGI("GSDGSGS", "IT FAILED :(");
 
 button:
   - platform: homekit_base
@@ -134,29 +145,6 @@ light:
   #   name: "Desk Lamp"
   #   output: simple_led
   #   restore_mode: RESTORE_DEFAULT_OFF
-
-homekit_base:
-  setup_code: '159-35-728'
-
-homekit:
-  light:
-    - id: test_light
-  # sensor:
-  #   - id: my_sensor
-  #   - id: my_sensor_second
-  # switch:
-  #   - id: some_switch
-  lock:
-    - id: this_lock
-      nfc_id: nfc_spi_module
-      on_hk_success:
-        lambda: |-
-          ESP_LOGI("HEREHERE", "IssuerID: %s", x.c_str());
-          ESP_LOGI("HEREHERE", "EndpointID: %s", y.c_str());
-          id(test_light).toggle().perform();
-      on_hk_fail:
-        lambda: |-
-          ESP_LOGI("GSDGSGS", "IT FAILED :(");
 
 logger:
   # hardware_uart: UART0
