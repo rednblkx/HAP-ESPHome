@@ -2,6 +2,7 @@
 #include <esp_log.h>
 #include <esphome/core/defines.h>
 #include <esphome/core/component.h>
+#include "const.h"
 #ifdef USE_LIGHT
 #include "light.hpp"
 #endif
@@ -31,6 +32,7 @@ namespace esphome
       void dump_config() override;
       #ifdef USE_HOMEKEY
       pn532::PN532* nfc = nullptr;
+      HKFinish hkHwFinish = SILVER;
       #endif
       #ifdef USE_LIGHT
       std::vector<LightEntity*> lights;
@@ -42,6 +44,7 @@ namespace esphome
       #endif
       #ifdef USE_HOMEKEY
       void set_nfc_ctx(pn532::PN532* nfcCtx);
+      void set_hk_hw_finish(HKFinish color);
       #endif
       #ifdef USE_SWITCH
       std::vector<SwitchEntity*> switches;

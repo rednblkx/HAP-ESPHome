@@ -58,6 +58,7 @@ homekit:
       on_hk_fail:
         lambda: |-
           ESP_LOGI("GSDGSGS", "IT FAILED :(");
+      hk_hw_finish: "SILVER"
 
 logger:
   level: DEBUG

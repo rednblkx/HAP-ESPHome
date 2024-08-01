@@ -7,6 +7,7 @@
 #include <hap_apple_chars.h>
 #ifdef USE_HOMEKEY
 #include <nvs.h>
+#include "const.h"
 #include <HK_HomeKit.h>
 #include <hkAuthContext.h>
 #include <esphome/components/pn532/pn532.h>
@@ -29,6 +30,8 @@ namespace esphome
       #ifdef USE_HOMEKEY
       static pn532::PN532* nfc_ctx;
       std::vector<uint8_t> nfcSupportedConfBuffer{ 0x01, 0x01, 0x10, 0x02, 0x01, 0x10 };
+      std::map<HKFinish, std::vector<uint8_t>> hk_color_vals = { {TAN, {0x01, 0x04, 0xce, 0xd5, 0xda, 0x00}}, {GOLD, {0x01, 0x04, 0xaa, 0xd6, 0xec, 0x00}}, {SILVER, {0x01, 0x04, 0xe3, 0xe3, 0xe3, 0x00}}, {BLACK, {0x01, 0x04, 0x00, 0x00, 0x00, 0x00}} };
+      std::unique_ptr<hap_tlv8_val_t> hkFinishTlvData;
       hap_tlv8_val_t nfcSupportedConf = {
         .buf = nfcSupportedConfBuffer.data(),
         .buflen = nfcSupportedConfBuffer.size()
@@ -52,6 +55,7 @@ namespace esphome
       void setup();
       #ifdef USE_HOMEKEY
       void set_nfc_ctx(pn532::PN532* ctx);
+      void set_hk_hw_finish(HKFinish color);
       void register_onhk_trigger(HKAuthTrigger* trig);
       void register_onhkfail_trigger(HKFailTrigger* trig);
       #endif

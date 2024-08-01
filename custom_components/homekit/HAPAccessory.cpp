@@ -13,12 +13,13 @@ namespace esphome
       #endif
       #ifdef USE_LOCK
       for (const auto &v : locks) {
-        v->setup();
         #ifdef USE_HOMEKEY
         if (nfc) {
+          v->set_hk_hw_finish(hkHwFinish);
           v->set_nfc_ctx(nfc);
         }
         #endif
+        v->setup();
       }
       #endif
       #ifdef USE_SWITCH
@@ -54,6 +55,9 @@ namespace esphome
     #ifdef USE_HOMEKEY
     void HAPAccessory::set_nfc_ctx(pn532::PN532* nfcCtx) {
       nfc = nfcCtx;
+    }
+    void HAPAccessory::set_hk_hw_finish(HKFinish color) {
+      hkHwFinish = color;
     }
     #endif
     #ifdef USE_SWITCH

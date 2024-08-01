@@ -9,5 +9,13 @@ namespace esphome
       CELSIUS,
       FAHRENHEIT
     };
+
+    enum HKFinish
+    {
+      TAN,
+      GOLD,
+      SILVER,
+      BLACK
+    };
   }
 }

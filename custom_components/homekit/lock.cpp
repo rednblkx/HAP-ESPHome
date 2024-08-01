@@ -207,6 +207,14 @@ namespace esphome
       void LockEntity::register_onhkfail_trigger(HKFailTrigger* trig) {
         triggers_onhk_fail_.push_back(trig);
       }
+      void LockEntity::set_hk_hw_finish(HKFinish color) {
+        ESP_LOGI(TAG, "SELECTED HK: %d", color);
+        hap_tlv8_val_t tlvData = {
+          .buf = hk_color_vals[color].data(),
+          .buflen = hk_color_vals[color].size()
+        };
+        hkFinishTlvData = std::make_unique<hap_tlv8_val_t>(tlvData);
+      }
       void LockEntity::set_nfc_ctx(pn532::PN532* ctx) {
         nfc_ctx = ctx;
         auto trigger = new nfc::NfcOnTagTrigger();
@@ -260,6 +268,7 @@ namespace esphome
             .manufacturer = strdup("rednblkx"),
             .fw_rev = strdup("0.1.0"),
             .hw_rev = NULL,
+            .hw_finish = hkFinishTlvData.get(),
             .pv = strdup("1.1.0"),
             .cid = HAP_CID_BRIDGE,
             .identify_routine = acc_identify,
@@ -298,6 +307,10 @@ namespace esphome
           ptrToLock->add_on_state_callback([this]() { this->on_lock_update(ptrToLock); });
 
         ESP_LOGI(TAG, "Lock '%s' linked to HomeKit", accessory_name.c_str());
+        hap_serv_t* acc_inf = hap_acc_get_serv_by_uuid(accessory, HAP_SERV_UUID_ACCESSORY_INFORMATION);
+        hap_char_t* hw_finish = hap_serv_get_char_by_uuid(acc_inf, HAP_CHAR_UUID_HARDWARE_FINISH);
+        const hap_val_t* val_finish = hap_char_get_val(hw_finish);
+        ESP_LOGI(TAG, "CHAR FINISH VALUE: %02x (%lu)", val_finish->t.buf[0], val_finish->t.buflen);
       }
   }
 }

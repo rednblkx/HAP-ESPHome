@@ -14,6 +14,7 @@ CODEOWNERS = ["@rednblkx"]
 homekit_ns = homekit_base.homekit_ns
 HAPRootComponent = homekit_base.HAPRootComponent
 TemperatureUnits = homekit_ns.enum("TemperatureUnits")
+HKFinish = homekit_ns.enum("HKFinish")
 HAPAccessory = homekit_ns.class_('HAPAccessory', cg.Component)
 LockEntity = homekit_ns.class_('LockEntity')
 OnHkSuccessTrigger = homekit_ns.class_(
@@ -29,6 +30,13 @@ TEMP_UNITS = {
     "FAHRENHEIT": TemperatureUnits.FAHRENHEIT
 }
 
+HK_HW_FINISH = {
+    "TAN": HKFinish.TAN,
+    "GOLD": HKFinish.GOLD,
+    "SILVER": HKFinish.SILVER,
+    "BLACK": HKFinish.BLACK
+}
+
 CONFIG_SCHEMA = cv.All(cv.Schema({
     cv.GenerateID() : cv.declare_id(HAPAccessory),
     cv.Optional("light"): cv.ensure_list({cv.Required(CONF_ID):  cv.use_id(light.LightState)}),
@@ -42,7 +50,8 @@ CONFIG_SCHEMA = cv.All(cv.Schema({
             {
                 cv.GenerateID(CONF_TRIGGER_ID): cv.declare_id(OnHkFailTrigger),
             }
-        )
+        ),
+        cv.Optional("hk_hw_finish", default="BLACK") : cv.enum(HK_HW_FINISH)
         }),
     cv.Optional("sensor"):  cv.ensure_list({cv.Required(CONF_ID): cv.use_id(sensor.Sensor), cv.Optional("temp_units", default="CELSIUS") : cv.enum(TEMP_UNITS)}),
     cv.Optional("switch"):  cv.ensure_list({cv.Required(CONF_ID): cv.use_id(switch.Switch)}),
@@ -68,6 +77,7 @@ async def to_code(config):
                 cg.add_platformio_option("build_unflags", "-fno-exceptions")
                 nfc = await cg.get_variable(l["nfc_id"])
                 cg.add(var.set_nfc_ctx(nfc))
+                cg.add(var.set_hk_hw_finish(l["hk_hw_finish"]))
                 cg.add_define("USE_HOMEKEY")
                 add_idf_component(
                     name="jsoncons",
