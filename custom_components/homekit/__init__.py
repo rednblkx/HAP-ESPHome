@@ -71,7 +71,7 @@ async def to_code(config):
             cg.add(var.add_sensor(await cg.get_variable(l['id']), l['temp_units']))
     if 'lock' in config:
         for l in config["lock"]:
-            lock_entity = cg.Pvariable(ID("homekit_lock_entity_ptr", True, LockEntity), var.add_lock(await cg.get_variable(l['id'])))
+            lock_entity = cg.Pvariable(ID(cv.validate_id_name("homekit_lock_entity_ptr"), True, LockEntity), var.add_lock(await cg.get_variable(l['id'])))
             if "nfc_id" in l:
                 cg.add_build_flag("-fexceptions")
                 cg.add_platformio_option("build_unflags", "-fno-exceptions")
