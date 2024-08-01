@@ -106,7 +106,7 @@ namespace esphome
           /* Add the Accessory to the HomeKit Database */
           hap_add_bridged_accessory(accessory, hap_get_unique_aid(std::to_string(sensorPtr->get_object_id_hash()).c_str()));
           if (!sensorPtr->is_internal())
-            sensorPtr->add_on_state_callback([this, sensorPtr](float v) { this->on_sensor_update(sensorPtr, v); });
+            sensorPtr->add_on_state_callback([this](float v) { this->on_sensor_update(sensorPtr, v); });
           ESP_LOGI(TAG, "Sensor '%s' linked to HomeKit", accessory_name.c_str());
         }
       }

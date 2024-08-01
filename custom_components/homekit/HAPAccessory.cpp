@@ -63,17 +63,20 @@ namespace esphome
     #ifdef USE_SWITCH
     SwitchEntity* HAPAccessory::add_switch(switch_::Switch* switchPtr) {
       switches.push_back(new SwitchEntity(switchPtr));
+      return switches.back();
     }
     #endif
     #ifdef USE_SENSOR
     SensorEntity* HAPAccessory::add_sensor(sensor::Sensor* sensorPtr, TemperatureUnits units) {
       sensors.push_back(new SensorEntity(sensorPtr));
+      return sensors.back();
     }
     #endif
     #ifdef USE_CLIMATE
     ClimateEntity* HAPAccessory::add_climate(climate::Climate* climatePtr) {
       climates.push_back(new ClimateEntity(climatePtr));
-    }
+      return climates.back();
+  }
     #endif
   }
 }

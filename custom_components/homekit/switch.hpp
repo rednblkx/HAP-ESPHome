@@ -85,7 +85,7 @@ namespace esphome
         /* Add the Accessory to the HomeKit Database */
         hap_add_bridged_accessory(accessory, hap_get_unique_aid(std::to_string(switchPtr->get_object_id_hash()).c_str()));
         if (!switchPtr->is_internal())
-          switchPtr->add_on_state_callback([this, switchPtr](bool v) { this->on_switch_update(switchPtr, v); });
+          switchPtr->add_on_state_callback([this](bool v) { this->on_switch_update(switchPtr, v); });
         ESP_LOGI(TAG, "Switch '%s' linked to HomeKit", accessory_name.c_str());
       }
     };
