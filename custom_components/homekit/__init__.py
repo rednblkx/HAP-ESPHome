@@ -80,14 +80,9 @@ async def to_code(config):
                 cg.add(var.set_hk_hw_finish(l["hk_hw_finish"]))
                 cg.add_define("USE_HOMEKEY")
                 add_idf_component(
-                    name="jsoncons",
-                    repo="https://github.com/rednblkx/jsoncons.git",
-                    ref="master"
-                )
-                add_idf_component(
                     name="HK-HomeKit-Lib",
                     repo="https://github.com/rednblkx/HK-HomeKit-Lib.git",
-                    ref="esphome"
+                    ref="esp-idf"
                 )
                 for conf in l.get("on_hk_success", []):
                     trigger = cg.new_Pvariable(conf[CONF_TRIGGER_ID])

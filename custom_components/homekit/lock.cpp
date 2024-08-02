@@ -66,9 +66,8 @@ namespace esphome
               issuer.issuer_id = id;
               issuer.issuer_pk.insert(issuer.issuer_pk.begin(), ctrl->info.ltpk, ctrl->info.ltpk + 32);
               readerData.issuers.emplace_back(issuer);
-              std::vector<uint8_t> cborBuf;
-              jsoncons::msgpack::encode_msgpack(readerData, cborBuf);
-              esp_err_t set_nvs = nvs_set_blob(savedHKdata, "READERDATA", cborBuf.data(), cborBuf.size());
+              std::vector<uint8_t> data = nlohmann::json::to_msgpack(readerData);
+              esp_err_t set_nvs = nvs_set_blob(savedHKdata, "READERDATA", data.data(), data.size());
               esp_err_t commit_nvs = nvs_commit(savedHKdata);
               LOG(I, "NVS SET STATUS: %s", esp_err_to_name(set_nvs));
               LOG(I, "NVS COMMIT STATUS: %s", esp_err_to_name(commit_nvs));
@@ -176,8 +175,8 @@ namespace esphome
           LOG(I, "NVS DATA LENGTH: %d", len);
           ESP_LOG_BUFFER_HEX_LEVEL(TAG, savedBuf.data(), savedBuf.size(), ESP_LOG_DEBUG);
           try {
-            // delete readerData;
-            readerData = msgpack::decode_msgpack<readerData_t>(savedBuf);
+            nlohmann::json data = nlohmann::json::from_msgpack(savedBuf);
+            data.get_to<readerData_t>(readerData);
           }
           catch (const std::exception& e) {
             std::cerr << e.what() << '\n';
