@@ -29,52 +29,52 @@ lock:
     on_unlock:
     - logger.log: "Door Unlocked!"
 
-# sensor:
-#   - platform: template
-#     id: "my_sensor"
-#     name: "Template Sensor"
-#     unit_of_measurement: "°C"
-#     icon: "mdi:water-percent"
-#     device_class: "temperature"
-#     state_class: "measurement"
-#     lambda: |-
-#         return id(number_sensor).state;
-#     update_interval: 10s
-#   - platform: template
-#     id: "my_sensor_second"
-#     name: "Template Sensor 1"
-#     unit_of_measurement: "°C"
-#     icon: "mdi:water-percent"
-#     device_class: "temperature"
-#     state_class: "measurement"
-#     lambda: |-
-#         return id(number_sensor).state;
-#     update_interval: 10s
+sensor:
+  - platform: template
+    id: "my_sensor"
+    name: "Template Sensor"
+    unit_of_measurement: "°C"
+    icon: "mdi:water-percent"
+    device_class: "temperature"
+    state_class: "measurement"
+    lambda: |-
+        return id(number_sensor).state;
+    update_interval: 10s
+  - platform: template
+    id: "my_sensor_second"
+    name: "Template Sensor 1"
+    unit_of_measurement: "°C"
+    icon: "mdi:water-percent"
+    device_class: "temperature"
+    state_class: "measurement"
+    lambda: |-
+        return id(number_sensor).state;
+    update_interval: 10s
 
-# number:
-#   - platform: template
-#     name: "Sensor Value"
-#     min_value: 10
-#     max_value: 30
-#     step: 1
-#     optimistic: True
-#     id: "number_sensor"
+number:
+  - platform: template
+    name: "Sensor Value"
+    min_value: 10
+    max_value: 30
+    step: 1
+    optimistic: True
+    id: "number_sensor"
 
-# switch:
-#   - platform: template
-#     id: some_switch
-#     name: "Template Switch"
-#     restore_mode: RESTORE_DEFAULT_OFF
-#     lambda: |-
-#       if (id(test_light).current_values.get_state()) {
-#         return true;
-#       } else {
-#         return false;
-#       }
-#     turn_on_action:
-#       - light.turn_on: test_light
-#     turn_off_action:
-#       - light.turn_off: test_light
+switch:
+  - platform: template
+    id: some_switch
+    name: "Template Switch"
+    restore_mode: RESTORE_DEFAULT_OFF
+    lambda: |-
+      if (id(test_light).current_values.get_state()) {
+        return true;
+      } else {
+        return false;
+      }
+    turn_on_action:
+      - light.turn_on: test_light
+    turn_off_action:
+      - light.turn_off: test_light
 
 external_components:
   - source:
@@ -101,7 +101,6 @@ esp32:
     sdkconfig_options:
       CONFIG_COMPILER_OPTIMIZATION_SIZE: y
       CONFIG_LWIP_MAX_SOCKETS: "16"
-      CONFIG_NEWLIB_NANO_FORMAT: y
       CONFIG_LOG_DEFAULT_LEVEL_ERROR: y
       CONFIG_LOG_DEFAULT_LEVEL: "1"
       CONFIG_LOG_MAXIMUM_LEVEL_INFO: y
@@ -123,6 +122,15 @@ homekit:
       on_hk_fail:
         lambda: |-
           ESP_LOGI("GSDGSGS", "IT FAILED :(");
+      hk_hw_finish: "SILVER"
+  light:
+    - id: test_light
+    - id: desk_light
+  sensor:
+    - id: my_sensor
+    - id: my_sensor_second
+  switch:
+    - id: some_switch
 
 button:
   - platform: homekit_base
@@ -140,11 +148,11 @@ light:
     name: "My Light"
     restore_mode: RESTORE_DEFAULT_OFF
 
-  # - platform: binary
-  #   id: desk_light
-  #   name: "Desk Lamp"
-  #   output: simple_led
-  #   restore_mode: RESTORE_DEFAULT_OFF
+  - platform: binary
+    id: desk_light
+    name: "Desk Lamp"
+    output: simple_led
+    restore_mode: RESTORE_DEFAULT_OFF
 
 logger:
   # hardware_uart: UART0
