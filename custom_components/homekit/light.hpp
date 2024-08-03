@@ -17,7 +17,7 @@ namespace esphome
       light::LightState* lightPtr;
       static int light_write(hap_write_data_t write_data[], int count, void* serv_priv, void* write_priv) {
         light::LightState* lightPtr = (light::LightState*)serv_priv;
-        ESP_LOGD(TAG, "Write called for Accessory %s (%s)", std::to_string(sensorPtr->get_object_id_hash()).c_str(), sensorPtr->get_name().c_str());
+        ESP_LOGD(TAG, "Write called for Accessory %s (%s)", std::to_string(lightPtr->get_object_id_hash()).c_str(), lightPtr->get_name().c_str());
         int i, ret = HAP_SUCCESS;
         hap_write_data_t* write;
         for (i = 0; i < count; i++) {
