@@ -77,9 +77,7 @@ switch:
       - light.turn_off: test_light
 
 external_components:
-  - source:
-      type: local
-      path: custom_components
+  source: github://rednblkx/HAP-ESPHome@main
 
 spi:
   clk_pin: 4
