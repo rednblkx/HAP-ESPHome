@@ -25,10 +25,10 @@ namespace esphome
     class HAPAccessory : public Component
     {
     public:
+      const char* TAG = "HAPAccessory";
       HAPAccessory();
       float get_setup_priority() const override { return setup_priority::AFTER_WIFI + 1; }
       void setup() override;
-      void loop() override;
       void dump_config() override;
       #ifdef USE_HOMEKEY
       pn532::PN532* nfc = nullptr;

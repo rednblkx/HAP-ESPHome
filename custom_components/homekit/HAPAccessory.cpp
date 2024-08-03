@@ -38,8 +38,12 @@ namespace esphome
       }
       #endif
     }
-    void HAPAccessory::loop() {}
-    void HAPAccessory::dump_config() {}
+    void HAPAccessory::dump_config() {
+      ESP_LOGCONFIG(TAG, "Lock HK Entities: %d", locks.size());
+      ESP_LOGCONFIG(TAG, "Light HK Entities: %d", lights.size());
+      ESP_LOGCONFIG(TAG, "Sensor HK Entities: %d", sensors.size());
+      ESP_LOGCONFIG(TAG, "Switch HK Entities: %d", switches.size());
+    }
     #ifdef USE_LIGHT
     LightEntity* HAPAccessory::add_light(light::LightState* lightPtr) {
       lights.push_back(new LightEntity(lightPtr));

@@ -108,7 +108,7 @@ namespace esphome
 
       
       void LockEntity::on_lock_update(lock::Lock* obj) {
-        ESP_LOGI("on_lock_update", "%s state: %s", obj->get_name().c_str(), lock_state_to_string(obj->state));
+        ESP_LOGD("on_lock_update", "%s state: %s", obj->get_name().c_str(), lock_state_to_string(obj->state));
         hap_acc_t* acc = hap_acc_get_by_aid(hap_get_unique_aid(std::to_string(obj->get_object_id_hash()).c_str()));
           hap_serv_t* hs = hap_acc_get_serv_by_uuid(acc, HAP_SERV_UUID_LOCK_MECHANISM);
         hap_char_t* current_state = hap_serv_get_char_by_uuid(hs, HAP_CHAR_UUID_LOCK_CURRENT_STATE);
@@ -134,20 +134,19 @@ namespace esphome
 
 
       int LockEntity::lock_write(hap_write_data_t write_data[], int count, void* serv_priv, void* write_priv) {
-        std::string key((char*)serv_priv);
-        ESP_LOGI("lock_write", "Write called for Accessory %s", (char*)serv_priv);
+        lock::Lock* lockPtr = (lock::Lock*)serv_priv;
+        ESP_LOGD("lock_write", "Write called for Accessory '%s'(%s)", lockPtr->get_name().c_str(), std::to_string(lockPtr->get_object_id_hash()).c_str());
         int i, ret = HAP_SUCCESS;
         hap_write_data_t* write;
         for (i = 0; i < count; i++) {
           write = &write_data[i];
-          lock::Lock* obj = App.get_lock_by_key(static_cast<uint32_t>(std::stoul(key)));
           if (!strcmp(hap_char_get_type_uuid(write->hc), HAP_CHAR_UUID_LOCK_TARGET_STATE)) {
-            ESP_LOGI("lock_write", "Target State req: %d", write->val.i);
+            ESP_LOGD("lock_write", "Target State req: %d", write->val.i);
             hap_char_update_val(write->hc, &(write->val));
             hap_char_t* c = hap_serv_get_char_by_uuid(hap_char_get_parent(write->hc), HAP_CHAR_UUID_LOCK_CURRENT_STATE);
-            ESP_LOGI("lock_write", "Current State: %d", hap_char_get_val(c)->i);
+            ESP_LOGD("lock_write", "Current State: %d", hap_char_get_val(c)->i);
             hap_char_update_val(c, &(write->val));
-            write->val.i ? obj->lock() : obj->unlock();
+            write->val.i ? lockPtr->lock() : lockPtr->unlock();
             *(write->status) = HAP_STATUS_SUCCESS;
           }
           else {
@@ -167,13 +166,13 @@ namespace esphome
         ptrToLock = lockPtr;
       #ifdef USE_HOMEKEY
         auto t = nvs_open("HK_DATA", NVS_READWRITE, &savedHKdata);
-        LOG(I, "NVS_OPEN: %s", esp_err_to_name(t));
+        LOG(D, "NVS_OPEN: %s", esp_err_to_name(t));
         size_t len = 0;
         if (!nvs_get_blob(savedHKdata, "READERDATA", NULL, &len)) {
           std::vector<uint8_t> savedBuf(len);
           nvs_get_blob(savedHKdata, "READERDATA", savedBuf.data(), &len);
-          LOG(I, "NVS DATA LENGTH: %d", len);
-          ESP_LOG_BUFFER_HEX_LEVEL(TAG, savedBuf.data(), savedBuf.size(), ESP_LOG_DEBUG);
+          LOG(D, "NVS DATA LENGTH: %d", len);
+          ESP_LOG_BUFFER_HEX_LEVEL(TAG, savedBuf.data(), savedBuf.size(), ESP_LOG_VERBOSE);
           try {
             nlohmann::json data = nlohmann::json::from_msgpack(savedBuf);
             data.get_to<readerData_t>(readerData);
@@ -188,6 +187,26 @@ namespace esphome
         LOG(D, "READER UNIQUE IDENTIFIER: %s", utils::bufToHexString(readerData.reader_id.data(), readerData.reader_id.size(), true).c_str());
         LOG(D, "ISSUERS COUNT: %d", readerData.issuers.size());
       #endif
+      }
+      std::string intToFinishString(HKFinish d) {
+        switch (d)
+        {
+        case TAN:
+          return "TAN";
+          break;
+        case GOLD:
+          return "GOLD";
+          break;
+        case SILVER:
+          return "SILVER";
+          break;
+        case BLACK:
+          return "BLACK";
+          break;
+        default:
+          return "UNKNOWN";
+          break;
+        }
       }
       std::string hex_representation(const std::vector<uint8_t>& v) {
         std::string hex_tmp;
@@ -207,7 +226,7 @@ namespace esphome
         triggers_onhk_fail_.push_back(trig);
       }
       void LockEntity::set_hk_hw_finish(HKFinish color) {
-        ESP_LOGI(TAG, "SELECTED HK: %d", color);
+        ESP_LOGI(TAG, "SELECTED HK FINISH: %s", intToFinishString(color).c_str());
         hap_tlv8_val_t tlvData = {
           .buf = hk_color_vals[color].data(),
           .buflen = hk_color_vals[color].size()
@@ -253,7 +272,7 @@ namespace esphome
               {
                 t->process();
               }
-              ESP_LOGI(TAG, "Invalid response for HK");
+              ESP_LOGE(TAG, "Invalid response for HK");
             }
           }
           });
@@ -281,7 +300,7 @@ namespace esphome
         lockMechanism = hap_serv_lock_mechanism_create(ptrToLock->state, ptrToLock->state);
 
         ESP_LOGD(TAG, "ID HASH: %lu", ptrToLock->get_object_id_hash());
-        hap_serv_set_priv(lockMechanism, strdup(std::to_string(ptrToLock->get_object_id_hash()).c_str()));
+        hap_serv_set_priv(lockMechanism, ptrToLock);
 
         /* Set the write callback for the service */
         hap_serv_set_write_cb(lockMechanism, lock_write);
