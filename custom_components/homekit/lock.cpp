@@ -162,9 +162,30 @@ namespace esphome
         return HAP_SUCCESS;
       }
 
+      // Function to calculate CRC16
+      void crc16a(unsigned char* data, unsigned int size, unsigned char* result) {
+        unsigned short w_crc = 0x6363;
+
+        for (unsigned int i = 0; i < size; ++i) {
+          unsigned char byte = data[i];
+          byte = (byte ^ (w_crc & 0x00FF));
+          byte = ((byte ^ (byte << 4)) & 0xFF);
+          w_crc = ((w_crc >> 8) ^ (byte << 8) ^ (byte << 3) ^ (byte >> 4)) & 0xFFFF;
+        }
+
+        result[0] = static_cast<unsigned char>(w_crc & 0xFF);
+        result[1] = static_cast<unsigned char>((w_crc >> 8) & 0xFF);
+      }
+
+      // Function to append CRC16 to data
+      void with_crc16(unsigned char* data, unsigned int size, unsigned char* result) {
+        crc16a(data, size, result);
+      }
+
       LockEntity::LockEntity(lock::Lock* lockPtr) {
         ptrToLock = lockPtr;
       #ifdef USE_HOMEKEY
+        ecpData.resize(18);
         auto t = nvs_open("HK_DATA", NVS_READWRITE, &savedHKdata);
         LOG(D, "NVS_OPEN: %s", esp_err_to_name(t));
         size_t len = 0;
@@ -186,6 +207,8 @@ namespace esphome
         LOG(D, "READER GROUP IDENTIFIER: %s", utils::bufToHexString(readerData.reader_gid.data(), readerData.reader_gid.size(), true).c_str());
         LOG(D, "READER UNIQUE IDENTIFIER: %s", utils::bufToHexString(readerData.reader_id.data(), readerData.reader_id.size(), true).c_str());
         LOG(D, "ISSUERS COUNT: %d", readerData.issuers.size());
+        memcpy(ecpData.data() + 8, readerData.reader_gid.data(), readerData.reader_gid.size());
+        with_crc16(ecpData.data(), 16, ecpData.data() + 16);
       #endif
       }
       std::string intToFinishString(HKFinish d) {
@@ -234,6 +257,7 @@ namespace esphome
         hkFinishTlvData = std::make_unique<hap_tlv8_val_t>(tlvData);
       }
       void LockEntity::set_nfc_ctx(pn532::PN532* ctx) {
+        ctx->set_ecp_frame(ecpData);
         nfc_ctx = ctx;
         auto trigger = new nfc::NfcOnTagTrigger();
         ctx->register_ontag_trigger(trigger);
@@ -242,7 +266,7 @@ namespace esphome
           std::function<bool(uint8_t*, uint8_t, uint8_t*, uint16_t*, bool)> lambda = [=](uint8_t* send, uint8_t sendLen, uint8_t* res, uint16_t* resLen, bool ignoreLog) -> bool {
             auto data = ctx->inDataExchange(std::vector<uint8_t>(send, send + sendLen));
             data.erase(data.begin());
-            ESP_LOGI(TAG, "%s", format_hex_pretty(data).c_str());
+            ESP_LOGD(TAG, "%s", format_hex_pretty(data).c_str());
             memcpy(res, data.data(), data.size());
             uint16_t t = data.size();
             memcpy(resLen, &t, sizeof(uint16_t));
@@ -250,7 +274,7 @@ namespace esphome
             };
           auto versions = ctx->inDataExchange({ 0x00, 0xA4, 0x04, 0x00, 0x07, 0xA0, 0x00, 0x00, 0x08, 0x58, 0x01, 0x01, 0x0 });
           if (versions.size() > 0) {
-            ESP_LOGI(TAG, "HK SUPPORTED VERSIONS: %s", format_hex_pretty(versions).c_str());
+            ESP_LOGD(TAG, "HK SUPPORTED VERSIONS: %s", format_hex_pretty(versions).c_str());
             if (versions.data()[versions.size() - 2] == 0x90 && versions.data()[versions.size() - 1] == 0x0) {
               HKAuthenticationContext authCtx(lambda, readerData, savedHKdata);
               auto authResult = authCtx.authenticate(KeyFlow(kFlowFAST));
@@ -274,6 +298,8 @@ namespace esphome
               }
               ESP_LOGE(TAG, "Invalid response for HK");
             }
+          } else {
+            ESP_LOGW(TAG, "Target probably not Homekey");
           }
           });
         automation_id_3->add_actions({lambdaaction_id_3});
@@ -325,10 +351,6 @@ namespace esphome
           ptrToLock->add_on_state_callback([this]() { this->on_lock_update(ptrToLock); });
 
         ESP_LOGI(TAG, "Lock '%s' linked to HomeKit", accessory_name.c_str());
-        hap_serv_t* acc_inf = hap_acc_get_serv_by_uuid(accessory, HAP_SERV_UUID_ACCESSORY_INFORMATION);
-        hap_char_t* hw_finish = hap_serv_get_char_by_uuid(acc_inf, HAP_CHAR_UUID_HARDWARE_FINISH);
-        const hap_val_t* val_finish = hap_char_get_val(hw_finish);
-        ESP_LOGI(TAG, "CHAR FINISH VALUE: %02x (%lu)", val_finish->t.buf[0], val_finish->t.buflen);
       }
   }
 }
