@@ -17,6 +17,8 @@ static const uint8_t PN532_COMMAND_VERSION_DATA = 0x02;
 static const uint8_t PN532_COMMAND_SAMCONFIGURATION = 0x14;
 static const uint8_t PN532_COMMAND_RFCONFIGURATION = 0x32;
 static const uint8_t PN532_COMMAND_INDATAEXCHANGE = 0x40;
+static const uint8_t PN532_COMMAND_INCOMMUNICATETHRU = 0x42;
+static const uint8_t PN532_COMMAND_WRITEREGISTER = 0x08;
 static const uint8_t PN532_COMMAND_INLISTPASSIVETARGET = 0x4A;
 static const uint8_t PN532_COMMAND_POWERDOWN = 0x16;
 
@@ -49,6 +51,8 @@ class PN532 : public PollingComponent {
   }
 
   std::vector<uint8_t> inDataExchange(const std::vector<uint8_t>& data);
+
+  void set_ecp_frame(std::vector<uint8_t>& frame) { ecp_frame = frame; };
 
   bool is_writing() { return this->next_task_ != READ; };
 
@@ -95,8 +99,12 @@ class PN532 : public PollingComponent {
   bool write_mifare_ultralight_tag_(std::vector<uint8_t> &uid, nfc::NdefMessage *message);
   bool clean_mifare_ultralight_();
 
-  bool updates_enabled_{true};
+  std::vector<uint8_t> ecp_frame;
+
+  bool updates_enabled_{ true };
   bool requested_read_{false};
+  bool requested_ecp_{false};
+  int next_flow_{ 0 };
   std::vector<PN532BinarySensor *> binary_sensors_;
   std::vector<nfc::NfcOnTagTrigger *> triggers_ontag_;
   std::vector<nfc::NfcOnTagTrigger *> triggers_ontagremoved_;

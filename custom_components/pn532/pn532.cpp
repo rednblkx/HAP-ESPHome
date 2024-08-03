@@ -78,6 +78,30 @@ void PN532::setup() {
     return;
   }
 
+  // Set up Passive Activation Tries to 0
+  if (!this->write_command_({
+          PN532_COMMAND_RFCONFIGURATION,
+          0x05,
+          0xFF,
+          0x01,
+          0x0
+    })) {
+    this->error_code_ = WAKEUP_FAILED;
+    this->mark_failed();
+    return;
+  }
+
+  std::vector<uint8_t> rf_conf;
+  if (!this->read_response(PN532_COMMAND_RFCONFIGURATION, rf_conf)) {
+    ESP_LOGV(TAG, "Invalid RF CONF result: (%u)", rf_conf.size());  // NOLINT
+    for (uint8_t dat : rf_conf) {
+      ESP_LOGV(TAG, " 0x%02X", dat);
+    }
+    this->error_code_ = WAKEUP_FAILED;
+    this->mark_failed();
+    return;
+  }
+
   this->turn_off_rf_();
 }
 
@@ -110,6 +134,38 @@ void PN532::update() {
   for (auto *obj : this->binary_sensors_)
     obj->on_scan_end();
 
+  // Enhanced Contactless Polling sequence
+  if (this->ecp_frame.size() > 0) {
+    if (this->next_flow_ == 0) {
+      if (!this->write_command_({
+              PN532_COMMAND_WRITEREGISTER,
+              (0x633d >> 8) & 0xFF,
+              0x633d & 0xFF,
+              0x0
+        })) {
+        ESP_LOGW(TAG, "Setting 8bit TX failed!");
+        this->status_set_warning();
+        return;
+      }
+      this->status_clear_warning();
+      this->requested_ecp_ = true;
+      return;
+    }
+    else if (this->next_flow_ == 1) {
+      std::vector<uint8_t> frame_send{ PN532_COMMAND_INCOMMUNICATETHRU };
+      frame_send.insert(frame_send.end(), ecp_frame.begin(), ecp_frame.end());
+      if (!this->write_command_(frame_send)) {
+        ESP_LOGW(TAG, "Sending ECP Frame failed!");
+        this->status_set_warning();
+        return;
+      }
+      this->status_clear_warning();
+      this->requested_ecp_ = true;
+      return;
+    }
+  }
+  // End of ECP sequence
+
   if (!this->write_command_({
           PN532_COMMAND_INLISTPASSIVETARGET,
           0x01,  // max 1 card
@@ -124,6 +180,45 @@ void PN532::update() {
 }
 
 void PN532::loop() {
+  // Enhanced Contactless Polling sequence
+  if (this->next_flow_ == 0 && this->requested_ecp_) {
+    auto ready = this->read_ready_(false);
+    if (ready == WOULDBLOCK)
+      return;
+
+    bool success = false;
+    std::vector<uint8_t> read;
+
+    if (ready == READY) {
+      success = this->read_response(PN532_COMMAND_WRITEREGISTER, read);
+      ESP_LOGV(TAG, "ECP: %s", format_hex(read).c_str());
+      this->next_flow_ = 1;
+    }
+    else {
+      this->send_ack_();  // abort still running InListPassiveTarget
+    }
+    this->requested_ecp_ = false;
+    return;
+  } else if (this->next_flow_ == 1 && this->requested_ecp_) {
+    auto ready = this->read_ready_(false);
+    if (ready == WOULDBLOCK)
+      return;
+
+    bool success = false;
+    std::vector<uint8_t> read;
+
+    if (ready == READY) {
+      success = this->read_response(PN532_COMMAND_INCOMMUNICATETHRU, read);
+      ESP_LOGV(TAG, "ECP: %s", format_hex(read).c_str());
+      this->next_flow_ = 2;
+    }
+    else {
+      this->send_ack_();  // abort still running InListPassiveTarget
+    }
+    this->requested_ecp_ = false;
+    return;
+  }
+  // End of ECP sequence
   if (!this->requested_read_)
     return;
 
@@ -150,7 +245,8 @@ void PN532::loop() {
         trigger->process(tag);
     }
     this->current_uid_ = {};
-    this->turn_off_rf_();
+    // this->turn_off_rf_();
+    this->next_flow_ = 0;
     return;
   }
 
@@ -163,7 +259,8 @@ void PN532::loop() {
         trigger->process(tag);
     }
     this->current_uid_ = {};
-    this->turn_off_rf_();
+    // this->turn_off_rf_();
+    this->next_flow_ = 0;
     return;
   }
 
@@ -241,6 +338,8 @@ void PN532::loop() {
   this->read_mode();
 
   this->turn_off_rf_();
+
+  this->next_flow_ = 0;
 }
 
 std::vector<uint8_t> PN532::inDataExchange(const std::vector<uint8_t>& data) {
