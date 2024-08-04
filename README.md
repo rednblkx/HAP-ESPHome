@@ -1,14 +1,12 @@
 # HAP-ESPHome [![Discord Badge](https://img.shields.io/badge/Discord-5865F2?logo=discord&logoColor=fff&style=for-the-badge)](https://discordapp.com/invite/VWpZ5YyUcm)
 
-Accessibility through simplicity
+HomeKit support for ESPHome-based ESP32 devices
 
 ## 1. Introduction
 
 **First of all**, the code could be much better than it is, but it mostly gets the job done from my testing, still, beware of bugs.
 
-This project started as a desire to expand the possibilities of [HomeKey-ESP32](https://github.com/rednblkx/HomeKey-ESP32) by combining it with the powers of a environment like ESPHome that's infinitely configurable and most of the focus was put into porting the functionality of the aforementioned repository.
-
-Now, it would've been a whole lot of wasted potential for this kind of implementation if i were to just link a Lock from ESPHome to HomeKit, and so this project actually implements a couple of entity types from ESPHome that you can link to HomeKit, more on that below.
+This project aims to bring HomeKit support to ESP32 devices flashed with an ESPHome configuration that will enable you to directly control the device from the Apple Home app without anything else inbetween.
 
 Components can be imported with the two lines below added to your yaml file, keep reading for documentation on how they can be used.
 
@@ -19,16 +17,14 @@ external_components:
 
 ## 2. Entity Types
 
-At the moment, there are only a couple of object types that you can add to HomeKit through this project.
+At the moment, only a couple of entity types have been implemented as seen in the table below where you'll find listed all the supported types by this project and which of their attributes are being synced from ESPHome to HomeKit.
 
-Below you can find a table that represents what types can be linked to HomeKit and which of their attributes are being synced with it.
-
-| Type   | Attributes                                                            | Options                                                                                                                                                                                                                                                                                                                                                                                                                                                                 | Notes                                                                                                                     |   |   |
-|--------|-----------------------------------------------------------------------|-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|---------------------------------------------------------------------------------------------------------------------------|---|---|
-| Light  | On/Off, Brightness, RGB, Color Temperature                            | `id` - ID of the `light:` component that will be linked                                                                                                                                                                                                                                                                                                                                                                                                                 |                                                                                                                           |   |   |
-| Lock   | Lock/Unlock                                                           | `id` - ID of the `lock:` component that will be linked<br><br>`nfc_id` - ID of the PN532 component for enabling HomeKey functionality<br>`on_hk_success` - ESPHome Trigger where you can define what should happen when HomeKey is authenticated and two parameters are passed on, the issuer id(account) as `x` and the endpoint id(device) as `y` that can be used within a lambda, those can be used too identify who/what was authenticated<br>`on_hk_fail` - ESPHome Trigger where you can define what should happen when HomeKey fails<br>`hk_hw_finish` - Property that sets the Color of the HomeKey Card from the pre-defined list (SILVER, GOLD, BLACK, TAN) | Modifications were needed both on the frontend and backend and only the SPI driver(pn532_spi component) has been modified |   |   |
-| Switch | On/Off                                                                | `id` - ID of the `switch:` component that will be linked                                                                                                                                                                                                                                                                                                                                                                                                                |                                                                                                                           |   |   |
-| Sensor | Temperature, Humidity, Illuminance, Air Quality, CO2, CO, PM10, PM2.5 | `id` - ID of the `sensor:` component that will be linked                                                                                                                                                                                                                                                                                                                                                                                                                | `device_class` property has to be declared for each sensor on the yaml file                                               |   |   |
+| Type   | Attributes                                                            | Options                                                                                                                                                                                                                                                                                                                                                                                                                                                                 | Notes                                                                                                                     |
+|--------|-----------------------------------------------------------------------|-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|---------------------------------------------------------------------------------------------------------------------------|
+| Light  | On/Off, Brightness, RGB, Color Temperature                            | `id` - ID of the `light:` component that will be linked                                                                                                                                                                                                                                                                                                                                                                                                                 |                                                                                                                           |
+| Lock   | Lock/Unlock                                                           | `id` - ID of the `lock:` component that will be linked<br><br>`nfc_id` - ID of the PN532 component for enabling HomeKey functionality<br>`on_hk_success` - ESPHome Trigger where you can define what should happen when HomeKey is authenticated and two parameters are passed on as type `std::string`, the issuer id(account) as `x` and the endpoint id(device) as `y`, those can be used too identify who/what was authenticated<br>`on_hk_fail` - ESPHome Trigger where you can define what should happen when HomeKey fails<br>`hk_hw_finish` - Property that sets the Color of the HomeKey Card from the pre-defined list (SILVER, GOLD, BLACK, TAN) | Modifications were needed both on the frontend and backend and only the SPI driver(pn532_spi component) has been modified |   |   |
+| Switch | On/Off                                                                | `id` - ID of the `switch:` component that will be linked                                                                                                                                                                                                                                                                                                                                                                                                                |                                                                                                                           |
+| Sensor | Temperature, Humidity, Illuminance, Air Quality, CO2, CO, PM10, PM2.5 | `id` - ID of the `sensor:` component that will be linked                                                                                                                                                                                                                                                                                                                                                                                                                | `device_class` property has to be declared for each sensor on the yaml file                                               |
 
 
 ## 3. Essentials
@@ -48,9 +44,13 @@ esp32:
       CONFIG_MBEDTLS_HKDF_C: y
 ```
 
+The default setup code for HomeKit is `159-35-728` and can be changed by the `setup_code` property for the `homekit_base` component as you will see further below.
+
 Now that we've established some basics, let's get into the actual stuff.
 
-The HomeKit implementation was configured to act as a bridge in order to have multiple different accessories added and the project itself comprises of two components for this reason(though realistically could've been just one):
+The HomeKit implementation is configured as a bridge and you shall see it as one in the Home app, this is so you can have multiple different accessories added as you possibly would in a ESPHome configuration.
+
+The project itself comprises of two components for this reason(though realistically could've been just one) as follows:
 
 - `homekit_base` -> Handles the bridge stuff
   - A `button:` can be assigned as a factory reset button
@@ -63,6 +63,7 @@ The HomeKit implementation was configured to act as a bridge in order to have mu
     ```
 
   - Adding property `setup_code` assigns the setup code used during HomeKit pairing
+    Note that the setup code has to be set in this exact format `XXX-XX-XXX`.
 
     ```yaml
     homekit_base:
