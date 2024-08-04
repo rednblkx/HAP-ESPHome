@@ -1,4 +1,4 @@
-# HAP-ESPHome
+# HAP-ESPHome [![Discord Badge](https://img.shields.io/badge/Discord-5865F2?logo=discord&logoColor=fff&style=for-the-badge)](https://discordapp.com/invite/VWpZ5YyUcm)
 
 Accessibility through simplicity
 
