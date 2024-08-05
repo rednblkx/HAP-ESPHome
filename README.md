@@ -15,6 +15,8 @@ external_components:
   source: github://rednblkx/HAP-ESPHome@main
 ```
 
+**Note** that some components like Bluetooth for example, take up a lot of space in RAM and will result in error during compiling, something like `section '.iram0.text' will not fit in region 'iram0_0_seg'` will be present in the log.
+
 ## 2. Entity Types
 
 At the moment, only a couple of entity types have been implemented as seen in the table below where you'll find listed all the supported types by this project and which of their attributes are being synced from ESPHome to HomeKit.
