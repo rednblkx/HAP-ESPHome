@@ -13,6 +13,7 @@ Components can be imported with the two lines below added to your yaml file, kee
 ```yaml
 external_components:
   source: github://rednblkx/HAP-ESPHome@main
+  refresh: 0s
 ```
 
 **Note** that some components like Bluetooth for example, take up a lot of space in RAM and will result in error during compiling, something like `section '.iram0.text' will not fit in region 'iram0_0_seg'` will be present in the log.
