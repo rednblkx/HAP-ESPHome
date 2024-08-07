@@ -78,6 +78,7 @@ switch:
 
 external_components:
   source: github://rednblkx/HAP-ESPHome@main
+  refresh: 0s
 
 spi:
   clk_pin: 4

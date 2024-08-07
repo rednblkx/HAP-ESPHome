@@ -36,7 +36,7 @@ cv.only_with_esp_idf)
 async def to_code(config):
     # cg.add_define("CONFIG_ESP_MFI_DEBUG_ENABLE")
     add_idf_component(
-        name="libsodium",
+        name="idf-extra-components",
         repo="https://github.com/espressif/idf-extra-components.git",
         ref="master",
         components=["libsodium", "jsmn", "json_parser", "json_generator"],
