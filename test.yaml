@@ -154,5 +154,5 @@ light:
     restore_mode: RESTORE_DEFAULT_OFF
 
 logger:
-  # hardware_uart: UART0
+  hardware_uart: UART0
   level: DEBUG
