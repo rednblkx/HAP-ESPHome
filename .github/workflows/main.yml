@@ -9,6 +9,7 @@ on:
     branches: [ main, dev ]
     paths:
       - 'components/**'
+      - '.github/workflows/main.yml'
       - '*.yaml'
       - '*.yml'
   pull_request:
@@ -37,5 +38,10 @@ jobs:
         run: pip install --upgrade platformio
       - name: Install ESPHome
         run: pip install esphome
+      - name: Create dummy secrets.yml
+        run: |
+          touch secrets.yaml
+          echo 'wifi_ssid: "ssid"' >> secrets.yaml
+          echo 'wifi_password: "password"' >> secrets.yaml
       - name: Compile test configuration
         run: esphome compile test.yaml
