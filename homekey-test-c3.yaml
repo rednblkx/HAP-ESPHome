@@ -53,6 +53,11 @@ homekit:
         lambda: |-
           ESP_LOGI("HEREHERE", "IssuerID: %s", x.c_str());
           ESP_LOGI("HEREHERE", "EndpointID: %s", y.c_str());
+          if (id(this_lock).state == LOCK_STATE_LOCKED) {
+              id(this_lock).unlock();
+          } else {
+              id(this_lock).lock();
+          }
       on_hk_fail:
         lambda: |-
           ESP_LOGI("GSDGSGS", "IT FAILED :(");
