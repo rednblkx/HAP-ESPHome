@@ -140,6 +140,8 @@ The project itself comprises of two components for this reason(though realistica
 
 ## 4. HomeKey
 
+If you notice an error in the logs that says `Can't decode message length.`, you can safely ignore it. The project is using a "hijacked" version of the official pn532 component and the message is part of the normal operation of it since it's meant to be used with "regular" NFC Tags.
+
 ### 4.1 Disclaimer
 
 Like in the case of [HomeKey-ESP32](https://github.com/rednblkx/HomeKey-ESP32), the functionality consists of reverse engineered parts thanks to [@kormax](https://github.com/kormax) and [@kupa22](https://github.com/kupa22) and it is **not** an official implementation by Apple and the functionality or parts of it might or might not break in the future and/or lack official features or internal implementations.
