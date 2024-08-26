@@ -1,3 +1,5 @@
+#include <esphome/core/defines.h>
+#ifdef USE_LOCK
 #include "lock.h"
 
 namespace esphome
@@ -354,3 +356,4 @@ namespace esphome
       }
   }
 }
+#endif

@@ -1,5 +1,6 @@
 #pragma once
 #include <esp_log.h>
+#include <esphome/core/log.h>
 #include <esphome/core/defines.h>
 #include <esphome/core/component.h>
 #include "const.h"
