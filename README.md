@@ -1,5 +1,7 @@
 # HAP-ESPHome [![Discord Badge](https://img.shields.io/badge/Discord-5865F2?logo=discord&logoColor=fff&style=for-the-badge)](https://discordapp.com/invite/VWpZ5YyUcm)
 
+[![CI](https://github.com/rednblkx/HAP-ESPHome/actions/workflows/main.yml/badge.svg?branch=main)](https://github.com/rednblkx/HAP-ESPHome/actions/workflows/main.yml)
+
 HomeKit support for ESPHome-based ESP32 devices
 
 ## 1. Introduction
