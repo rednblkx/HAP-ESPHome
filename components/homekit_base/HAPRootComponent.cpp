@@ -18,11 +18,15 @@ namespace esphome
             hap_reset_pairings();
         }
 
-        HAPRootComponent::HAPRootComponent(const char* setup_code) : setup_code(setup_code)
+        HAPRootComponent::HAPRootComponent(const char* setup_code, const char* setup_id, std::map<AInfo, const char*> info)
         {
             ESP_LOGI(TAG, "[APP] Free memory: %" PRIu32 " bytes", esp_get_free_heap_size());
             ESP_LOGI(TAG, "[APP] IDF version: %s", esp_get_idf_version());
             ESP_LOGI(TAG, "%s", esp_err_to_name(nvs_flash_init()));
+            std::map<AInfo, const char*> merged_info;
+            merged_info.merge(info);
+            merged_info.merge(this->accessory_info);
+            this->accessory_info.swap(merged_info);
             hap_acc_t* accessory;
             /* Initialize the HAP core */
             hap_init(HAP_TRANSPORT_WIFI);
@@ -36,11 +40,11 @@ namespace esphome
             hap_cfg.task_priority = 2;
             hap_set_config(&hap_cfg);
             hap_acc_cfg_t cfg = {
-                .name = "ESPH Bridge",
-                .model = "HAP-ESPHome",
-                .manufacturer = "rednblkx",
-                .serial_num = "abcdefg",
-                .fw_rev = "0.1.0",
+                .name = strdup(accessory_info[NAME]),
+                .model = strdup(accessory_info[MODEL]),
+                .manufacturer = strdup(accessory_info[MANUFACTURER]),
+                .serial_num = strdup(accessory_info[SN]),
+                .fw_rev = strdup(accessory_info[FW_REV]),
                 .hw_rev = "1.0",
                 .pv = "1.1.0",
                 .cid = HAP_CID_BRIDGE,
@@ -67,7 +71,7 @@ namespace esphome
             /* Unique Setup code of the format xxx-xx-xxx. Default: 111-22-333 */
             hap_set_setup_code(setup_code);
             /* Unique four character Setup Id. Default: ES32 */
-            hap_set_setup_id("ES32");
+            hap_set_setup_id(setup_id);
         }
 
         void HAPRootComponent::setup() {

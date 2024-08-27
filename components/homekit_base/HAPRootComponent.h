@@ -10,6 +10,8 @@
 #include <vector>
 #include <tuple>
 #include <algorithm>
+#include <map>
+#include "esphome/components/homekit/const.h"
 #ifdef USE_BUTTON
 #include "esphome/components/button/button.h"
 #endif
@@ -24,12 +26,11 @@ namespace homekit {
   #endif
   private:
     static constexpr const char* TAG = "HAPRootComponent";
-    std::string setup_code;
-    bool exposeAll = true;
+    std::map<AInfo, const char*> accessory_info = {{NAME, "ESPH Bridge"}, {MODEL, "HAP-BRIDGE"}, {SN, "16161616"}, {MANUFACTURER, "rednblkx"}, {FW_REV, "0.1"}};
   public:
     float get_setup_priority() const override { return setup_priority::AFTER_WIFI; }
     void factory_reset();
-    HAPRootComponent(const char* setup_code);
+    HAPRootComponent(const char* setup_code = "159-35-728", const char* setup_id = "ES32", std::map<AInfo, const char*> info = {{NAME, "ESPH Bridge"}, {MODEL, "HAP-BRIDGE"}, {SN, "16161616"}, {MANUFACTURER, "rednblkx"}, {FW_REV, "0.1"}});
     void setup() override;
     void loop() override;
     void dump_config() override;

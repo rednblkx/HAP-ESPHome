@@ -107,6 +107,12 @@ esp32:
       CONFIG_MBEDTLS_HKDF_C: y
 
 homekit_base:
+  meta:
+    name: "PRIMO"
+    manufacturer: "AMICI&CO"
+    model: "IMPERIUM"
+    serial_number: "16161616"
+    fw_rev: "0.16.2"
   setup_code: '159-35-728'
 
 homekit:
