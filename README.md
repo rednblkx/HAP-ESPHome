@@ -8,13 +8,15 @@ HomeKit support for ESPHome-based ESP32 devices
 
 This project aims to bring HomeKit support to ESP32 devices flashed with an ESPHome configuration that will enable you to directly control the device from the Apple Home app without anything else inbetween.
 
-Components can be imported with the two lines below added to your yaml file, keep reading for documentation on how they can be used.
+Components can be imported like any other external compoents as follows:
 
 ```yaml
 external_components:
   source: github://rednblkx/HAP-ESPHome@main
   refresh: 0s
 ```
+
+See [Components](#3-components) for documentation.
 
 > [!IMPORTANT]  
 > Some components like Bluetooth for example, take up a lot of space in RAM and will result in error during compiling, something like `section '.iram0.text' will not fit in region 'iram0_0_seg'` will be present in the log.
