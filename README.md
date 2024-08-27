@@ -1,12 +1,10 @@
-# HAP-ESPHome [![Discord Badge](https://img.shields.io/badge/Discord-5865F2?logo=discord&logoColor=fff&style=for-the-badge)](https://discordapp.com/invite/VWpZ5YyUcm)
+![logo_2_128](https://github.com/user-attachments/assets/085f5da6-8b3f-4951-90fb-3da5ab52d0dc)
 
-[![CI](https://github.com/rednblkx/HAP-ESPHome/actions/workflows/main.yml/badge.svg?branch=main)](https://github.com/rednblkx/HAP-ESPHome/actions/workflows/main.yml)
+# HAP-ESPHome [![CI](https://github.com/rednblkx/HAP-ESPHome/actions/workflows/main.yml/badge.svg?branch=main)](https://github.com/rednblkx/HAP-ESPHome/actions/workflows/main.yml) [![Discord Badge](https://img.shields.io/badge/Discord-5865F2?logo=discord&logoColor=fff&style=for-the-badge)](https://discordapp.com/invite/VWpZ5YyUcm)
 
 HomeKit support for ESPHome-based ESP32 devices
 
 ## 1. Introduction
-
-**First of all**, the code could be much better than it is, but it mostly gets the job done from my testing, still, beware of bugs.
 
 This project aims to bring HomeKit support to ESP32 devices flashed with an ESPHome configuration that will enable you to directly control the device from the Apple Home app without anything else inbetween.
 
@@ -18,23 +16,21 @@ external_components:
   refresh: 0s
 ```
 
-**Note** that some components like Bluetooth for example, take up a lot of space in RAM and will result in error during compiling, something like `section '.iram0.text' will not fit in region 'iram0_0_seg'` will be present in the log.
+> [!IMPORTANT]  
+> Some components like Bluetooth for example, take up a lot of space in RAM and will result in error during compiling, something like `section '.iram0.text' will not fit in region 'iram0_0_seg'` will be present in the log.
 
-## 2. Entity Types
+### Supported entity types
 
-At the moment, only a couple of entity types have been implemented as seen in the table below where you'll find listed all the supported types by this project and which of their attributes are being synced from ESPHome to HomeKit.
+| Type   | Attributes                                                            | Notes                                                                                                                                               |
+|--------|-----------------------------------------------------------------------|-----------------------------------------------------------------------------------------------------------------------------------------------------|
+| Light  | On/Off, Brightness, RGB, Color Temperature                            |                                                                                                                                                     |
+| Lock   | Lock/Unlock                                                           | Homekey can be enabled but only the `pn532_spi` component is supported to be used with it                                                           |
+| Switch | On/Off                                                                |                                                                                                                                                     |
+| Sensor | Temperature, Humidity, Illuminance, Air Quality, CO2, CO, PM10, PM2.5 | `device_class` property has to be declared with the sensor type as per HASS [docs](https://www.home-assistant.io/integrations/sensor/#device-class) |
 
-| Type   | Attributes                                                            | Properties                                                                                                                                                                                                                                                                                                                                                                                                                                                              | Notes                                                                                                                     |
-|--------|-----------------------------------------------------------------------|-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|---------------------------------------------------------------------------------------------------------------------------|
-| Light  | On/Off, Brightness, RGB, Color Temperature                            | `id` - ID of the `light:` component that will be linked                                                                                                                                                                                                                                                                                                                                                                                                                 |                                                                                                                           |
-| Lock   | Lock/Unlock                                                           | `id` - ID of the `lock:` component that will be linked<br><br>`nfc_id` - ID of the PN532 component for enabling HomeKey functionality<br>`on_hk_success` - ESPHome Trigger where you can define what should happen when HomeKey is authenticated and two parameters are passed on as type `std::string`, the issuer id(account) as `x` and the endpoint id(device) as `y`, those can be used too identify who/what was authenticated<br>`on_hk_fail` - ESPHome Trigger where you can define what should happen when HomeKey fails<br>`hk_hw_finish` - Property that sets the Color of the HomeKey Card from the pre-defined list (SILVER, GOLD, BLACK, TAN) | Only `pn532_spi` component is supported |   |   |
-| Switch | On/Off                                                                | `id` - ID of the `switch:` component that will be linked                                                                                                                                                                                                                                                                                                                                                                                                                |                                                                                                                           |
-| Sensor | Temperature, Humidity, Illuminance, Air Quality, CO2, CO, PM10, PM2.5 | `id` - ID of the `sensor:` component that will be linked                                                                                                                                                                                                                                                                                                                                                                                                                | `device_class` property has to be declared with the sensor type as per HASS [docs](https://www.home-assistant.io/integrations/sensor/#device-class)                                               |
+## 2. Essentials
 
-
-## 3. Essentials
-
-**Important Note:** The underlying [esp-homekit-sdk](https://github.com/rednblkx/esp-homekit-sdk) library and the components were dedigned to be used with ESP-IDF 5, see below required configuration
+The underlying [esp-homekit-sdk](https://github.com/rednblkx/esp-homekit-sdk) library and the components were dedigned to be used with ESP-IDF 5 and HKDF needs to be enabled for mbedtls, see below required configuration
 
 ```yaml
 esp32:
@@ -49,96 +45,85 @@ esp32:
       CONFIG_MBEDTLS_HKDF_C: y
 ```
 
-The default setup code for HomeKit is `159-35-728` and can be changed by the `setup_code` property for the `homekit_base` component as you will see further below.
+## 3. Components
 
-Now that we've established some basics, let's get into the actual stuff.
+Project is divided into two different components, `homekit_base` which handles the bridge logic and `homekit` that handles the actual accessory logic (lights, switches, etc.).
 
-The HomeKit implementation is configured as a bridge and you shall see it as one in the Home app, this is so you can have multiple different accessories added as you possibly would in a ESPHome configuration.
+This repository also includes the `pn532` and `pn532_spi` components which are just slightly modified versions of the official ones from the ESPHome repository to suit HomeKey needs with no extra options added to them nor deleted, however, it's not guaranteed to be kept up to date with upstream changes.
 
-The project itself comprises of two components for this reason(though realistically could've been just one) as follows:
+### 3.1. `homekit_base`
 
-- `homekit_base` -> Handles the bridge stuff
-  - A `button:` can be assigned as a factory reset button
+> [!NOTE]  
+> The `homekit_base` component does not have to included in the configuration unless you are interested in one of the properties listed below as it is automatically loaded by the `homekit` component
 
-    ```yaml
-    button:
-    - platform: homekit_base
-      factory_reset:
-        name: "Reset Homekit pairings"
-    ```
+### Configuration variables:
 
-  - Adding property `setup_code` assigns the setup code used during HomeKit pairing
-    Note that the setup code has to be set in this exact format `XXX-XX-XXX`.
+- **port** (Optional, int): The port HomeKit should listen to
+- **meta** (Optional): Bridge information
+  - **name** (Optional, string): Name of the bridge accessory
+  - **model** (Optional, string): Model name for the bridge accessory
+  - **manufacturer** (Optional, string): Manufacturer name for the bridge accessory
+  - **serial_number** (Optional, string): Serial number for the bridge accessory
+  - **fw_rev** (Optional, string): Firmware revision for the bridge accessory
+- **setup_code** (Optional, string): The HomeKit setup code in the format `XXX-XX-XXX` - **Default:** `159-35-728`
+- **setup_id** (Optional, string): The Setup ID that can be used to generate a pairing QR Code - **Default:** `ES32`
 
-    ```yaml
-    homekit_base:
-      setup_code: '159-35-728'
-    ```
+### Factory reset
 
-- `homekit` -> Handles the accessories, here is where you actually assign all the entities
-  - To add an entity, add the type name as a property (e.g. `light:`) and under it add the property `- id:` and assign to it the id of the entity that you wish to link as per the supported types in the table above.
+It can also be used as a platform component for the button component to reset the HomeKit pairings, see example below:
 
-    ```yaml
-    light:
-      - platform: binary
-        id: desk_light
-        name: "Desk Lamp"
-        output: simple_led
-        restore_mode: RESTORE_DEFAULT_OFF
-    homekit:
-      light:
-        - id: desk_light
-    ```
+  ```yaml
+  button:
+  - platform: homekit_base
+    factory_reset:
+      name: "Reset HomeKit pairings"
+  ```
+This will function like any regular button in ESPHome and therefore will be visible in the Web Interface and HASS.
 
-    Or for the more advanced lock component, where you can assign actions to HomeKey triggers
+### 3.2. `homekit`
 
-    1.
+This is what handles the accessory logic like syncing states between HomeKit and ESPHome and basic information (name, attributes, etc.).
 
-    ```yaml
-    lock:
-      - platform: template
-        id: "this_lock"
-        name: "Main Lock"
-        optimistic: True
-        on_lock:
-        - logger.log: "Door Locked!"
-        on_unlock:
-        - logger.log: "Door Unlocked!"
-    homekit:
-      lock:
-        - id: this_lock
-          nfc_id: nfc_spi_module
-          on_hk_success:
-            lambda: |-
-              ESP_LOGI("TEST", "IssuerID: %s", x.c_str());
-              ESP_LOGI("TEST", "EndpointID: %s", y.c_str());
-              id(test_light).toggle().perform();
-          on_hk_fail:
-            lambda: |-
-              ESP_LOGI("TEST", "IT FAILED :(");
-          hk_hw_finish: "SILVER"
-    ```
+> [!TIP]
+> For configuration examples, you can see the `.yaml` files in this repository, like [lights-c3.yaml](lights-c3.yaml)
 
-    2.
-
-    ```yaml
-    lock:
-      - platform: template
-        id: "this_lock"
-        name: "Main Lock"
-        optimistic: True
-        on_lock:
-        - logger.log: "Door Locked!"
-        on_unlock:
-        - logger.log: "Door Unlocked!"
-    homekit:
-      lock:
-        - id: this_lock
-          nfc_id: nfc_spi_module
-          on_hk_success:
-            - light.toggle: desk_light
-          hk_hw_finish: "SILVER"
-    ```
+### Configuration variables:
+- **light** (Optional): Array of Light entities
+  - **id** (Required, [Light](https://esphome.io/components/light/)) - Id of the light entity
+  - **meta** (Optional): Accessory information
+    - **name** (Optional, string): Name of the accessory, defaults to name of the entity
+    - **model** (Optional, string): Model name for the accessory
+    - **manufacturer** (Optional, string): Manufacturer name for the accessory
+    - **serial_number** (Optional, string): Serial number for the accessory, defaults to internal object id
+    - **fw_rev** (Optional, string): Firmware revision for the accessory
+- **lock** (Optional): Array of Lock Entities
+  - **id** (Required, [Lock](https://esphome.io/components/lock/)) - Id of the lock entity
+  - **meta** (Optional): Accessory information
+    - **name** (Optional, string): Name of the accessory, defaults to name of the entity
+    - **model** (Optional, string): Model name for the accessory
+    - **manufacturer** (Optional, string): Manufacturer name for the accessory
+    - **serial_number** (Optional, string): Serial number for the accessory, defaults to internal object id
+    - **fw_rev** (Optional, string): Firmware revision for the accessory
+  - **nfc_id** (Optional, [PN532](https://esphome.io/components/binary_sensor/pn532.html#over-spi)): Id of the `pn532_spi` component, used for the HomeKey functionality
+  - **on_hk_success** (Optional, [Action](https://esphome.io/automations/actions)): Action to be executed when Homekey is successfully authenticated
+  - **on_hk_fail** (Optional, [Action](https://esphome.io/automations/actions)): Action to be executed when Homekey fails to authenticate
+  - **hk_hw_finish**(Optional, string): Color of the Homekey card from the predefined `BLACK`, `SILVER`, `GOLD` and `TAN`, defaults to `BLACK`
+- **sensor**
+  - **id** (Required, [Sensor](https://esphome.io/components/sensor/)): Id of the sensor entity
+  - **meta** (Optional): Accessory information
+    - **name** (Optional, string): Name of the accessory, defaults to name of the entity
+    - **model** (Optional, string): Model name for the accessory
+    - **manufacturer** (Optional, string): Manufacturer name for the accessory
+    - **serial_number** (Optional, string): Serial number for the accessory, defaults to internal object id
+    - **fw_rev** (Optional, string): Firmware revision for the accessory
+- **switch**
+  - **id** (Required, [Switch](https://esphome.io/components/switch/)): Id of the switch entity
+  - **meta** (Optional): Accessory information
+    - **name** (Optional, string): Name of the accessory, defaults to name of the entity
+    - **model** (Optional, string): Model name for the accessory
+    - **manufacturer** (Optional, string): Manufacturer name for the accessory
+    - **serial_number** (Optional, string): Serial number for the accessory, defaults to internal object id
+    - **fw_rev** (Optional, string): Firmware revision for the accessory
 
 ## 4. HomeKey
 
@@ -146,13 +131,15 @@ If you notice an error in the logs that says `Can't decode message length.`, you
 
 ### 4.1 Disclaimer
 
-Like in the case of [HomeKey-ESP32](https://github.com/rednblkx/HomeKey-ESP32), the functionality consists of reverse engineered parts thanks to [@kormax](https://github.com/kormax) and [@kupa22](https://github.com/kupa22) and it is **not** an official implementation by Apple and the functionality or parts of it might or might not break in the future and/or lack official features or internal implementations.
+The functionality of Homekey is entirely based on reverse engineering since HomeKit specs stopped being available to hobbyists and therefore the entire functionality or parts of it might or might not break in the future and/or lack official features or any internal implementations.
 
 ### 4.2 Setup
 
-As it has been mentioned and showcased above, when adding a `lock:` you can also enable homekey functionality by assigning the id for the PN532 component to the `nfc_id` property.
+> [!IMPORTANT]
+> Only PN532 over SPI(`pn532_spi` component) is supported at the moment due to required modifications that haven't been ported to other protocols or chips
 
-**Important Note:** Modifications were required to the ESPHome PN532 driver components in order to have the implementation functional and only the `pn532_spi` component has been modified at this time. Additionally, it is recommended to keep the `update_interval` very low (< 500ms) for a quicker reaction on detecting and for decreasing the traffic time as sometimes it might fallback to another flow to attest the key which increases the amount of data exchanges. If you experience crashes, try to raise the `update_interval`.
+> [!NOTE]
+> For quick reactions and to avoid issues, don't raise the `update_interval` over 500ms
 
 ```yaml
 spi:
@@ -171,9 +158,17 @@ homekit:
       nfc_id: nfc_spi_module
 ```
 
-## Support
+## Support & Contributing
 
-If you found this project helpful, make sure to star the repository ⭐ and if you wish to buy me a coffee, consider sponsoring on [GitHub](https://github.com/sponsors/rednblkx).
+If you wish to contribute with a feature or a fix, a PR will be most welcomed
+
+The best way to support the work that i do is to :star: the repository but you can also buy me a :coffee: if you wish by sponsoring me on [GitHub](https://github.com/sponsors/rednblkx).
+
+## Credits
+
+[@kormax](https://github.com/kormax) - Homekey NFC protocol [research](https://github.com/kormax/apple-home-key), [ECP](https://github.com/kormax/apple-enhanced-contactless-polling) and [PoC](https://github.com/kormax/apple-home-key-reader)
+
+[@kupa22](https://github.com/kupa22) - [Documenting](https://github.com/kupa22/apple-homekey) the HAP part for the Homekey
 
 ## License
 
