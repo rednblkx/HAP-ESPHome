@@ -328,9 +328,14 @@ namespace esphome
         hap_acc_t* accessory = nullptr;
         hap_serv_t* lockMechanism = nullptr;
         std::string accessory_name = ptrToLock->get_name();
-        acc_cfg.name = strdup(accessory_name.c_str());
+        if (accessory_info[NAME] == NULL) {
+          acc_cfg.name = strdup(accessory_name.c_str());
+        }
+        else {
+          acc_cfg.name = strdup(accessory_info[NAME]);
+        }
         if (accessory_info[SN] == NULL) {
-          acc_cfg.serial_num = std::to_string(ptrToLock->get_object_id_hash()).data();
+          acc_cfg.serial_num = strdup(std::to_string(ptrToLock->get_object_id_hash()).c_str());
         }
         else {
           acc_cfg.serial_num = strdup(accessory_info[SN]);

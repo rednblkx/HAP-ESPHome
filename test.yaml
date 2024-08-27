@@ -136,6 +136,7 @@ homekit:
   light:
     - id: test_light
       meta:
+        name: "RGB Light"
         manufacturer: "AMICI&CO"
         model: "IGNIS"
         serial_number: "42424242"

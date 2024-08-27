@@ -20,6 +20,7 @@ namespace esphome
 
     enum AInfo
     {
+      NAME,
       MODEL,
       SN,
       MANUFACTURER,

@@ -35,6 +35,7 @@ TEMP_UNITS = {
 }
 
 ACC_INFO = {
+    "name": AInfo.NAME,
     "model": AInfo.MODEL,
     "manufacturer": AInfo.MANUFACTURER,
     "serial_number": AInfo.SN,
@@ -49,10 +50,7 @@ HK_HW_FINISH = {
 }
 
 ACCESSORY_INFORMATION = {
-    cv.Optional("model") : cv.string,
-    cv.Optional("manufacturer") : cv.string,
-    cv.Optional("serial_number") : cv.string,
-    cv.Optional("fw_rev") : cv.string
+    cv.Optional(i): cv.string for i in ACC_INFO
 }
 
 CONFIG_SCHEMA = cv.All(cv.Schema({
@@ -89,7 +87,7 @@ async def to_code(config):
                 info_temp = []
                 for m in l["meta"]:
                     info_temp.append([ACC_INFO[m], l["meta"][m]])
-                cg.add(light_entity.setInfo([info_temp]))
+                cg.add(light_entity.setInfo(info_temp))
     if 'sensor' in config:
         for l in config["sensor"]:
             sensor_entity = cg.Pvariable(ID(f"{l['id'].id}_hk_sensor_entity", type=SensorEntity), var.add_sensor(await cg.get_variable(l['id']), l['temp_units']))
@@ -97,7 +95,7 @@ async def to_code(config):
                 info_temp = []
                 for m in l["meta"]:
                     info_temp.append([ACC_INFO[m], l["meta"][m]])
-                cg.add(sensor_entity.setInfo([info_temp]))
+                cg.add(sensor_entity.setInfo(info_temp))
     if 'lock' in config:
         for l in config["lock"]:
             lock_entity = cg.Pvariable(ID(f"{l['id'].id}_hk_lock_entity", type=LockEntity), var.add_lock(await cg.get_variable(l['id'])))
@@ -125,7 +123,7 @@ async def to_code(config):
                 info_temp = []
                 for m in l["meta"]:
                     info_temp.append([ACC_INFO[m], l["meta"][m]])
-                cg.add(lock_entity.setInfo([info_temp]))
+                cg.add(lock_entity.setInfo(info_temp))
     if "switch" in config:
         for l in config["switch"]:
             switch_entity = cg.Pvariable(ID(f"{l['id'].id}_hk_switch_entity", type=SwitchEntity), var.add_switch(await cg.get_variable(l['id'])))
@@ -133,7 +131,7 @@ async def to_code(config):
                 info_temp = []
                 for m in l["meta"]:
                     info_temp.append([ACC_INFO[m], l["meta"][m]])
-                cg.add(switch_entity.setInfo([info_temp]))
+                cg.add(switch_entity.setInfo(info_temp))
     if "climate" in config:
         for l in config["climate"]:
             climate_entity = cg.Pvariable(ID(f"{l['id'].id}_hk_climate_entity", type=ClimateEntity), var.add_climate(await cg.get_variable(l['id'])))
@@ -141,4 +139,4 @@ async def to_code(config):
                 info_temp = []
                 for m in l["meta"]:
                     info_temp.append([ACC_INFO[m], l["meta"][m]])
-                cg.add(climate_entity.setInfo([info_temp]))
+                cg.add(climate_entity.setInfo(info_temp))

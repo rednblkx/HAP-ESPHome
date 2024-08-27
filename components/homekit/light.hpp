@@ -15,7 +15,7 @@ namespace esphome
     {
     private:
       static constexpr const char* TAG = "LightEntity";
-      std::map<AInfo, const char*> accessory_info = {{MODEL, "HAP-LIGHT"}, {SN, NULL}, {MANUFACTURER, "rednblkx"}, {FW_REV, "0.1"}};
+      std::map<AInfo, const char*> accessory_info = {{NAME, NULL}, {MODEL, "HAP-LIGHT"}, {SN, NULL}, {MANUFACTURER, "rednblkx"}, {FW_REV, "0.1"}};
       light::LightState* lightPtr;
       static int light_write(hap_write_data_t write_data[], int count, void* serv_priv, void* write_priv) {
         light::LightState* lightPtr = (light::LightState*)serv_priv;
@@ -155,9 +155,14 @@ namespace esphome
         hap_acc_t* accessory = nullptr;
         hap_serv_t* service = nullptr;
         std::string accessory_name = lightPtr->get_name();
-        acc_cfg.name = accessory_name.data();
+        if (accessory_info[NAME] == NULL) {
+          acc_cfg.name = strdup(accessory_name.c_str());
+        }
+        else {
+          acc_cfg.name = strdup(accessory_info[NAME]);
+        }
         if (accessory_info[SN] == NULL) {
-          acc_cfg.serial_num = std::to_string(lightPtr->get_object_id_hash()).data();
+          acc_cfg.serial_num = strdup(std::to_string(lightPtr->get_object_id_hash()).c_str());
         }
         else {
           acc_cfg.serial_num = strdup(accessory_info[SN]);

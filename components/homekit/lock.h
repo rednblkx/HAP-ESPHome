@@ -24,7 +24,7 @@ namespace esphome
     {
     private:
       static constexpr const char* TAG = "LockEntity";
-      std::map<AInfo, const char*> accessory_info = {{MODEL, "HAP-LOCK"}, {SN, NULL}, {MANUFACTURER, "rednblkx"}, {FW_REV, "0.1"}};
+      std::map<AInfo, const char*> accessory_info = {{NAME, NULL}, {MODEL, "HAP-LOCK"}, {SN, NULL}, {MANUFACTURER, "rednblkx"}, {FW_REV, "0.1"}};
       lock::Lock* ptrToLock;
       static nvs_handle savedHKdata;
       static readerData_t readerData;
