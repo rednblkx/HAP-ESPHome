@@ -213,6 +213,12 @@ namespace esphome
         with_crc16(ecpData.data(), 16, ecpData.data() + 16);
       #endif
       }
+      void LockEntity::setInfo(std::map<AInfo, const char*> info) {
+        std::map<AInfo, const char*> merged_info;
+        merged_info.merge(info);
+        merged_info.merge(this->accessory_info);
+        this->accessory_info.swap(merged_info);
+      }
       std::string intToFinishString(HKFinish d) {
         switch (d)
         {
@@ -310,9 +316,9 @@ namespace esphome
 
       void LockEntity::setup() {
         hap_acc_cfg_t acc_cfg = {
-            .model = strdup("ESP-LOCK"),
-            .manufacturer = strdup("rednblkx"),
-            .fw_rev = strdup("0.1.0"),
+            .model = strdup(accessory_info[MODEL]),
+            .manufacturer = strdup(accessory_info[MANUFACTURER]),
+            .fw_rev = strdup(accessory_info[FW_REV]),
             .hw_rev = NULL,
             .hw_finish = hkFinishTlvData.get(),
             .pv = strdup("1.1.0"),
@@ -323,7 +329,12 @@ namespace esphome
         hap_serv_t* lockMechanism = nullptr;
         std::string accessory_name = ptrToLock->get_name();
         acc_cfg.name = strdup(accessory_name.c_str());
-        acc_cfg.serial_num = std::to_string(ptrToLock->get_object_id_hash()).data();
+        if (accessory_info[SN] == NULL) {
+          acc_cfg.serial_num = std::to_string(ptrToLock->get_object_id_hash()).data();
+        }
+        else {
+          acc_cfg.serial_num = strdup(accessory_info[SN]);
+        }
         accessory = hap_acc_create(&acc_cfg);
         lockMechanism = hap_serv_lock_mechanism_create(ptrToLock->state, ptrToLock->state);
 

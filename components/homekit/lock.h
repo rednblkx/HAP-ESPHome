@@ -5,6 +5,7 @@
 #include <hap.h>
 #include <hap_apple_servs.h>
 #include <hap_apple_chars.h>
+#include <map>
 #ifdef USE_HOMEKEY
 #include <nvs.h>
 #include "const.h"
@@ -23,6 +24,7 @@ namespace esphome
     {
     private:
       static constexpr const char* TAG = "LockEntity";
+      std::map<AInfo, const char*> accessory_info = {{MODEL, "HAP-LOCK"}, {SN, NULL}, {MANUFACTURER, "rednblkx"}, {FW_REV, "0.1"}};
       lock::Lock* ptrToLock;
       static nvs_handle savedHKdata;
       static readerData_t readerData;
@@ -53,6 +55,7 @@ namespace esphome
 
       public:
       LockEntity(lock::Lock* lockPtr);
+      void setInfo(std::map<AInfo, const char*> info);
       void setup();
       #ifdef USE_HOMEKEY
       void set_nfc_ctx(pn532::PN532* ctx);

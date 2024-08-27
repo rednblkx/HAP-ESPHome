@@ -17,5 +17,13 @@ namespace esphome
       SILVER,
       BLACK
     };
+
+    enum AInfo
+    {
+      MODEL,
+      SN,
+      MANUFACTURER,
+      FW_REV
+    };
   }
 }

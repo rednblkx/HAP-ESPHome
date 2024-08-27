@@ -1,0 +1,61 @@
+
+esphome:
+    name: lights_test
+    platformio_options:
+      board_build.flash_mode: dio
+
+wifi:
+  ssid: !secret wifi_ssid
+  password: !secret wifi_password
+
+external_components:
+  source: github://rednblkx/HAP-ESPHome@main
+  refresh: 0s
+
+esp32:
+  board: esp32-c3-devkitm-1
+  flash_size: 4MB
+  framework:
+    type: esp-idf
+    version: 5.2.1
+    platform_version: 6.7.0
+    sdkconfig_options:
+      CONFIG_COMPILER_OPTIMIZATION_SIZE: y
+      CONFIG_LWIP_MAX_SOCKETS: "16"
+      CONFIG_MBEDTLS_HKDF_C: y
+
+number:
+  - platform: template
+    name: "Sensor Value"
+    min_value: 10
+    max_value: 30
+    step: 1
+    optimistic: True
+    id: "number_sensor"
+
+sensor:
+  - platform: template
+    id: "my_sensor"
+    name: "Template Sensor"
+    unit_of_measurement: "°C"
+    icon: "mdi:water-percent"
+    device_class: "temperature"
+    state_class: "measurement"
+    lambda: |-
+        return id(number_sensor).state;
+    update_interval: 10s
+
+homekit_base:
+  setup_code: '159-35-728'
+
+homekit:
+  sensor:
+    - id: my_sensor
+      meta:
+        manufacturer: "AMICI&CO"
+        model: "VARIO"
+        serial_number: "42424242"
+        fw_rev: "0.16.2"
+
+logger:
+  level: DEBUG

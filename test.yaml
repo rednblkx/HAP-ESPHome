@@ -112,6 +112,11 @@ homekit_base:
 homekit:
   lock:
     - id: this_lock
+      meta:
+        manufacturer: "AMICI&CO"
+        model: "IMPEDIO"
+        serial_number: "42424242"
+        fw_rev: "0.16.2"
       nfc_id: nfc_spi_module
       on_hk_success:
         lambda: |-
@@ -124,12 +129,37 @@ homekit:
       hk_hw_finish: "SILVER"
   light:
     - id: test_light
+      meta:
+        manufacturer: "AMICI&CO"
+        model: "IGNIS"
+        serial_number: "42424242"
+        fw_rev: "0.16.2"
     - id: desk_light
+      meta:
+        manufacturer: "AMICI&CO"
+        model: "IGNIS"
+        serial_number: "42424242"
+        fw_rev: "0.16.2"
   sensor:
     - id: my_sensor
+      meta:
+        manufacturer: "AMICI&CO"
+        model: "VARIO"
+        serial_number: "42424242"
+        fw_rev: "0.16.2"
     - id: my_sensor_second
+      meta:
+        manufacturer: "AMICI&CO"
+        model: "VARIO"
+        serial_number: "42424242"
+        fw_rev: "0.16.2"
   switch:
     - id: some_switch
+      meta:
+        manufacturer: "AMICI&CO"
+        model: "TRANSMUTO"
+        serial_number: "42424242"
+        fw_rev: "0.16.2"
 
 button:
   - platform: homekit_base
@@ -154,5 +184,5 @@ light:
     restore_mode: RESTORE_DEFAULT_OFF
 
 logger:
-  hardware_uart: UART0
+  # hardware_uart: UART0
   level: DEBUG

@@ -14,6 +14,7 @@ namespace esphome
     {
     private:
       static constexpr const char* TAG = "SwitchEntity";
+      std::map<AInfo, const char*> accessory_info = {{MODEL, "HAP-SWITCH"}, {SN, NULL}, {MANUFACTURER, "rednblkx"}, {FW_REV, "0.1"}};
       switch_::Switch* switchPtr;
       static int switch_write(hap_write_data_t write_data[], int count, void* serv_priv, void* write_priv) {
         switch_::Switch* switchPtr = (switch_::Switch*)serv_priv;
@@ -51,12 +52,18 @@ namespace esphome
         return HAP_SUCCESS;
       }
     public:
-      SwitchEntity(switch_::Switch* switchPtr): switchPtr(switchPtr) {}
+      SwitchEntity(switch_::Switch* switchPtr) : switchPtr(switchPtr) {}
+      void setInfo(std::map<AInfo, const char*> info) {
+        std::map<AInfo, const char*> merged_info;
+        merged_info.merge(info);
+        merged_info.merge(this->accessory_info);
+        this->accessory_info.swap(merged_info);
+      }
       void setup() {
         hap_acc_cfg_t acc_cfg = {
-            .model = strdup("ESP-Switch"),
-            .manufacturer = strdup("rednblkx"),
-            .fw_rev = strdup("0.1.0"),
+            .model = strdup(accessory_info[MODEL]),
+            .manufacturer = strdup(accessory_info[MANUFACTURER]),
+            .fw_rev = strdup(accessory_info[FW_REV]),
             .hw_rev = NULL,
             .pv = strdup("1.1.0"),
             .cid = HAP_CID_BRIDGE,
@@ -66,7 +73,12 @@ namespace esphome
         hap_serv_t* service = nullptr;
         std::string accessory_name = switchPtr->get_name();
         acc_cfg.name = accessory_name.data();
-        acc_cfg.serial_num = std::to_string(switchPtr->get_object_id_hash()).data();
+        if (accessory_info[SN] == NULL) {
+          acc_cfg.serial_num = std::to_string(switchPtr->get_object_id_hash()).data();
+        }
+        else {
+          acc_cfg.serial_num = strdup(accessory_info[SN]);
+        }
         /* Create accessory object */
         accessory = hap_acc_create(&acc_cfg);
         /* Create the switch Service. */

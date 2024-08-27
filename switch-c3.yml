@@ -1,0 +1,68 @@
+
+esphome:
+    name: lights_test
+    platformio_options:
+      board_build.flash_mode: dio
+
+wifi:
+  ssid: !secret wifi_ssid
+  password: !secret wifi_password
+
+output:
+  - platform: gpio
+    pin: GPIO3
+    id: simple_led
+
+external_components:
+  source: github://rednblkx/HAP-ESPHome@main
+  refresh: 0s
+
+esp32:
+  board: esp32-c3-devkitm-1
+  flash_size: 4MB
+  framework:
+    type: esp-idf
+    version: 5.2.1
+    platform_version: 6.7.0
+    sdkconfig_options:
+      CONFIG_COMPILER_OPTIMIZATION_SIZE: y
+      CONFIG_LWIP_MAX_SOCKETS: "16"
+      CONFIG_MBEDTLS_HKDF_C: y
+
+homekit_base:
+  setup_code: '159-35-728'
+
+homekit:
+  switch:
+    - id: some_switch
+      meta:
+        manufacturer: "AMICI&CO"
+        model: "TRANSMUTO"
+        serial_number: "42424242"
+        fw_rev: "0.16.2"
+
+switch:
+  - platform: template
+    id: some_switch
+    name: "Template Switch"
+    restore_mode: RESTORE_DEFAULT_OFF
+    lambda: |-
+      if (id(desk_light).current_values.get_state()) {
+        return true;
+      } else {
+        return false;
+      }
+    turn_on_action:
+      - light.turn_on: desk_light
+    turn_off_action:
+      - light.turn_off: desk_light
+
+light:
+  - platform: binary
+    id: desk_light
+    name: "Desk Lamp"
+    output: simple_led
+    restore_mode: RESTORE_DEFAULT_OFF
+
+logger:
+  level: DEBUG
