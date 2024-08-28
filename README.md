@@ -32,7 +32,9 @@ See [Components](#3-components) for documentation.
 
 ## 2. Essentials
 
-The underlying [esp-homekit-sdk](https://github.com/rednblkx/esp-homekit-sdk) library and the components were dedigned to be used with ESP-IDF 5 and HKDF needs to be enabled for mbedtls, see below required configuration
+The underlying [esp-homekit-sdk](https://github.com/rednblkx/esp-homekit-sdk) library and the components were dedigned to be used with ESP-IDF 5.
+
+See below required configuration that needs to be present at all times.
 
 ```yaml
 esp32:
@@ -70,9 +72,24 @@ This repository also includes the `pn532` and `pn532_spi` components which are j
 - **setup_code** (Optional, string): The HomeKit setup code in the format `XXX-XX-XXX` - **Default:** `159-35-728`
 - **setup_id** (Optional, string): The Setup ID that can be used to generate a pairing QR Code - **Default:** `ES32`
 
+Configuration Example:
+
+```yaml
+
+homekit_base:
+  meta:
+    name: "PRIMO"
+    manufacturer: "AMICI&CO"
+    model: "IMPERIUM"
+    serial_number: "16161616"
+    fw_rev: "0.16.2"
+  setup_code: '159-35-728'
+  setup_id: "ES32"
+```
+
 #### 3.1.2. Factory reset
 
-It can also be used as a platform component for the button component to reset the HomeKit pairings, see example below:
+`homekit_base` can also be used as a platform component for the button component to reset the HomeKit pairings, see example below:
 
   ```yaml
   button:
@@ -98,6 +115,20 @@ This is what handles the accessory logic like syncing states between HomeKit and
     - **manufacturer** (Optional, string): Manufacturer name for the accessory
     - **serial_number** (Optional, string): Serial number for the accessory, defaults to internal object id
     - **fw_rev** (Optional, string): Firmware revision for the accessory
+   
+  Example:
+  ```yaml
+  homekit:
+    light:
+      - id: desk_light
+        meta:
+          name: "RGB Light"
+          manufacturer: "AMICI&CO"
+          model: "IGNIS"
+          serial_number: "42424242"
+          fw_rev: "0.16.2"
+  ```
+
 - **lock** (Optional): Array of Lock Entities
   - **id** (Required, [Lock](https://esphome.io/components/lock/)) - Id of the lock entity
   - **meta** (Optional): Accessory information
@@ -110,6 +141,28 @@ This is what handles the accessory logic like syncing states between HomeKit and
   - **on_hk_success** (Optional, [Action](https://esphome.io/automations/actions)): Action to be executed when Homekey is successfully authenticated
   - **on_hk_fail** (Optional, [Action](https://esphome.io/automations/actions)): Action to be executed when Homekey fails to authenticate
   - **hk_hw_finish**(Optional, string): Color of the Homekey card from the predefined `BLACK`, `SILVER`, `GOLD` and `TAN`, defaults to `BLACK`
+ 
+  Example:
+  ```yaml
+  homekit:
+    lock:
+      - id: this_lock
+        meta:
+          manufacturer: "AMICI&CO"
+          model: "IMPEDIO"
+          serial_number: "42424242"
+          fw_rev: "0.16.2"
+        nfc_id: nfc_spi_module
+        on_hk_success:
+          lambda: |-
+            ESP_LOGI("HEREHERE", "IssuerID: %s", x.c_str());
+            ESP_LOGI("HEREHERE", "EndpointID: %s", y.c_str());
+            id(test_light).toggle().perform();
+        on_hk_fail:
+          lambda: |-
+            ESP_LOGI("GSDGSGS", "IT FAILED :(");
+        hk_hw_finish: "SILVER"
+  ```
 - **sensor**
   - **id** (Required, [Sensor](https://esphome.io/components/sensor/)): Id of the sensor entity
   - **meta** (Optional): Accessory information
@@ -118,6 +171,18 @@ This is what handles the accessory logic like syncing states between HomeKit and
     - **manufacturer** (Optional, string): Manufacturer name for the accessory
     - **serial_number** (Optional, string): Serial number for the accessory, defaults to internal object id
     - **fw_rev** (Optional, string): Firmware revision for the accessory
+
+  Example:
+  ```yaml
+  homekit:
+    sensor:
+      - id: my_sensor
+        meta:
+          manufacturer: "AMICI&CO"
+          model: "VARIO"
+          serial_number: "42424242"
+          fw_rev: "0.16.2"
+  ```
 - **switch**
   - **id** (Required, [Switch](https://esphome.io/components/switch/)): Id of the switch entity
   - **meta** (Optional): Accessory information
@@ -126,6 +191,17 @@ This is what handles the accessory logic like syncing states between HomeKit and
     - **manufacturer** (Optional, string): Manufacturer name for the accessory
     - **serial_number** (Optional, string): Serial number for the accessory, defaults to internal object id
     - **fw_rev** (Optional, string): Firmware revision for the accessory
+
+  Example:
+  ```yaml
+    switch:
+      - id: some_switch
+        meta:
+          manufacturer: "AMICI&CO"
+          model: "TRANSMUTO"
+          serial_number: "42424242"
+          fw_rev: "0.16.2"
+  ```
 
 ## 4. HomeKey
 
