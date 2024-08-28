@@ -35,11 +35,20 @@ number:
 
 sensor:
   - platform: template
-    id: "my_sensor"
+    id: "temp_sensor"
     name: "Template Sensor"
     unit_of_measurement: "°C"
     icon: "mdi:water-percent"
     device_class: "temperature"
+    state_class: "measurement"
+    lambda: |-
+        return id(number_sensor).state;
+    update_interval: 10s
+  - platform: template
+    id: "humidity_sensor"
+    name: "Template Humidity Sensor"
+    icon: "mdi:water-percent"
+    device_class: "humidity"
     state_class: "measurement"
     lambda: |-
         return id(number_sensor).state;
@@ -50,12 +59,13 @@ homekit_base:
 
 homekit:
   sensor:
-    - id: my_sensor
+    - id: temp_sensor
       meta:
         manufacturer: "AMICI&CO"
         model: "VARIO"
         serial_number: "42424242"
         fw_rev: "0.16.2"
+    - id: humidity_sensor
 
 logger:
   level: DEBUG
