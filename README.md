@@ -32,9 +32,9 @@ See [Components](#3-components) for documentation.
 
 ## 2. Essentials
 
-The underlying [esp-homekit-sdk](https://github.com/rednblkx/esp-homekit-sdk) library and the components were dedigned to be used with ESP-IDF 5.
+The underlying [esp-homekit-sdk](https://github.com/rednblkx/esp-homekit-sdk) library and the components were designed to be used with ESP-IDF 5.
 
-See below required configuration that needs to be present at all times.
+See below required configuration which needs to be present at all times.
 
 ```yaml
 esp32:
