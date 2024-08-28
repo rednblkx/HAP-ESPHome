@@ -58,7 +58,7 @@ This repository also includes the `pn532` and `pn532_spi` components which are j
 > [!NOTE]  
 > The `homekit_base` component does not have to included in the configuration unless you are interested in one of the properties listed below as it is automatically loaded by the `homekit` component
 
-### Configuration variables:
+#### 3.1.1. Configuration variables:
 
 - **port** (Optional, int): The port HomeKit should listen to
 - **meta** (Optional): Bridge information
@@ -70,7 +70,7 @@ This repository also includes the `pn532` and `pn532_spi` components which are j
 - **setup_code** (Optional, string): The HomeKit setup code in the format `XXX-XX-XXX` - **Default:** `159-35-728`
 - **setup_id** (Optional, string): The Setup ID that can be used to generate a pairing QR Code - **Default:** `ES32`
 
-### Factory reset
+#### 3.1.2. Factory reset
 
 It can also be used as a platform component for the button component to reset the HomeKit pairings, see example below:
 
@@ -89,7 +89,7 @@ This is what handles the accessory logic like syncing states between HomeKit and
 > [!TIP]
 > For configuration examples, you can see the `.yaml` files in this repository, like [lights-c3.yaml](lights-c3.yaml)
 
-### Configuration variables:
+#### 3.2.1. Configuration variables:
 - **light** (Optional): Array of Light entities
   - **id** (Required, [Light](https://esphome.io/components/light/)) - Id of the light entity
   - **meta** (Optional): Accessory information
