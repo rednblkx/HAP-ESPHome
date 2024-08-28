@@ -1,6 +1,6 @@
-![logo_2_128](https://github.com/user-attachments/assets/085f5da6-8b3f-4951-90fb-3da5ab52d0dc)
+<img src="https://github.com/user-attachments/assets/9939edca-202c-4794-aff1-b6f3d7962eb0" width="128" height="128">
 
-# HAP-ESPHome [![CI](https://github.com/rednblkx/HAP-ESPHome/actions/workflows/main.yml/badge.svg?branch=main)](https://github.com/rednblkx/HAP-ESPHome/actions/workflows/main.yml) [![Discord Badge](https://img.shields.io/badge/Discord-5865F2?logo=discord&logoColor=fff&style=for-the-badge)](https://discordapp.com/invite/VWpZ5YyUcm)
+# HAP-ESPHome [![CI](https://github.com/rednblkx/HAP-ESPHome/actions/workflows/main.yml/badge.svg?branch=main)](https://github.com/rednblkx/HAP-ESPHome/actions/workflows/main.yml) [![C# Discord](https://badgen.net/discord/members/VWpZ5YyUcm?icon=discord)](https://discord.com/invite/VWpZ5YyUcm)
 
 HomeKit support for ESPHome-based ESP32 devices
 
@@ -165,6 +165,8 @@ homekit:
 If you wish to contribute with a feature or a fix, a PR will be most welcomed
 
 The best way to support the work that i do is to :star: the repository but you can also buy me a :coffee: if you wish by sponsoring me on [GitHub](https://github.com/sponsors/rednblkx).
+
+You can also choose to join the [Discord server](https://discord.com/invite/VWpZ5YyUcm) where you will find a helpful and lovely community.
 
 ## Credits
 
