@@ -250,6 +250,10 @@ You can also choose to join the [Discord server](https://discord.com/invite/VWpZ
 
 [@kupa22](https://github.com/kupa22) - [Documenting](https://github.com/kupa22/apple-homekey) the HAP part for the Homekey
 
+[ESPHome](https://github.com/esphome/esphome) - ESPHome and the PN532 module
+
+[Espressif](https://github.com/espressif) - [esp-homekit-sdk](https://github.com/espressif/esp-homekit-sdk)
+
 ## License
 
 This repository consists of multiple licenses since it contains some components([pn532](https://github.com/rednblkx/HAP-ESPHome/tree/main/components/pn532) and [pn532_spi](https://github.com/rednblkx/HAP-ESPHome/tree/main/components/pn532_spi)) originally from the [ESPHome](https://github.com/esphome/esphome) repository, please consult the LICENSE file in each folder in the [components](https://github.com/rednblkx/HAP-ESPHome/tree/main/components) folder.
