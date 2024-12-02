@@ -30,11 +30,11 @@ See [Components](#3-components) for documentation.
 | Switch | On/Off                                                                |                                                                                                                                                     |
 | Sensor | Temperature, Humidity, Illuminance, Air Quality, CO2, CO, PM10, PM2.5 | `device_class` property has to be declared with the sensor type as per HASS [docs](https://www.home-assistant.io/integrations/sensor/#device-class) |
 
-## 2. Essentials
+## 2. Prerequisites
 
-The underlying [esp-homekit-sdk](https://github.com/rednblkx/esp-homekit-sdk) library and the components were designed to be used with ESP-IDF 5.
+The components were designed to be used with ESP-IDF version 5.
 
-See below required configuration which needs to be present at all times.
+See below required configuration that needs to be present in your yaml file.
 
 ```yaml
 esp32:
@@ -49,11 +49,16 @@ esp32:
       CONFIG_MBEDTLS_HKDF_C: y
 ```
 
+`CONFIG_COMPILER_OPTIMIZATION_SIZE` is not functionally required but assists with the size optimization since a full configuration will take a lot of space.
+
 ## 3. Components
 
 Project is divided into two different components, `homekit_base` which handles the bridge logic and `homekit` that handles the actual accessory logic (lights, switches, etc.).
 
 This repository also includes the `pn532` and `pn532_spi` components which are just slightly modified versions of the official ones from the ESPHome repository to suit HomeKey needs with no extra options added to them nor deleted, however, it's not guaranteed to be kept up to date with upstream changes.
+
+> [!TIP]
+> For configuration examples, you can see the `.yaml` files in this repository, e.g. [lights-c3.yaml](lights-c3.yaml)
 
 ### 3.1. `homekit_base`
 
@@ -102,9 +107,6 @@ This will function like any regular button in ESPHome and therefore will be visi
 ### 3.2. `homekit`
 
 This is what handles the accessory logic like syncing states between HomeKit and ESPHome and basic information (name, attributes, etc.).
-
-> [!TIP]
-> For configuration examples, you can see the `.yaml` files in this repository, like [lights-c3.yaml](lights-c3.yaml)
 
 #### 3.2.1. Configuration variables:
 - **light** (Optional): Array of Light entities
@@ -205,11 +207,13 @@ This is what handles the accessory logic like syncing states between HomeKit and
 
 ## 4. HomeKey
 
-If you notice an error in the logs that says `Can't decode message length.`, you can safely ignore it. The project is using a "hijacked" version of the official pn532 component and the message is part of the normal operation of it since it's meant to be used with "regular" NFC Tags.
+> [!NOTE]
+> If you notice an error in the logs that says `Can't decode message length.`, you can safely ignore it. The project is using a "hijacked" version of the official pn532 component and the message is part of the normal operation of it since it's meant to be used with "regular" NFC Tags.
 
 ### 4.1 Disclaimer
 
-The functionality of Homekey is entirely based on reverse engineering since HomeKit specs stopped being available to hobbyists and therefore the entire functionality or parts of it might or might not break in the future and/or lack official features or any internal implementations.
+> [!WARNING]
+> The functionality of Homekey is entirely based on reverse engineering since HomeKit specs stopped being available to hobbyists and therefore the entire functionality or parts of it might or might not break in the future and/or lack official features or any internal implementations.
 
 ### 4.2 Setup
 
