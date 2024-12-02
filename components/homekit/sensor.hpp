@@ -71,10 +71,10 @@ namespace esphome
         else if (std::equal(device_class.begin(), device_class.end(), strdup("aqi"))) {
           service = hap_serv_air_quality_sensor_create(sensorPtr->state);
         }
-        else if (std::equal(device_class.begin(), device_class.end(), strdup("co2"))) {
+        else if (std::equal(device_class.begin(), device_class.end(), strdup("carbon_dioxide"))) {
           service = hap_serv_carbon_dioxide_sensor_create(sensorPtr->state);
         }
-        else if (std::equal(device_class.begin(), device_class.end(), strdup("co"))) {
+        else if (std::equal(device_class.begin(), device_class.end(), strdup("carbon_monoxide"))) {
           service = hap_serv_carbon_monoxide_sensor_create(sensorPtr->state);
         }
         else if (std::equal(device_class.begin(), device_class.end(), strdup("pm10"))) {
