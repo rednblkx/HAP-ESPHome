@@ -102,8 +102,9 @@ class PN532 : public PollingComponent {
   std::vector<uint8_t> ecp_frame;
 
   bool updates_enabled_{ true };
-  bool requested_read_{false};
-  bool requested_ecp_{false};
+  bool requested_read_{ false };
+  bool target_still_present{ false };
+  bool requested_ecp_{ false };
   int next_flow_{ 0 };
   std::vector<PN532BinarySensor *> binary_sensors_;
   std::vector<nfc::NfcOnTagTrigger *> triggers_ontag_;

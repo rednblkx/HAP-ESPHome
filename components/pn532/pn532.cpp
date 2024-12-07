@@ -195,7 +195,7 @@ void PN532::loop() {
       this->next_flow_ = 1;
     }
     else {
-      this->send_ack_();  // abort still running InListPassiveTarget
+      this->send_ack_();
     }
     this->requested_ecp_ = false;
     return;
@@ -213,7 +213,7 @@ void PN532::loop() {
       this->next_flow_ = 2;
     }
     else {
-      this->send_ack_();  // abort still running InListPassiveTarget
+      this->send_ack_();
     }
     this->requested_ecp_ = false;
     return;
@@ -252,6 +252,7 @@ void PN532::loop() {
 
   uint8_t num_targets = read[0];
   if (num_targets != 1) {
+    this->target_still_present = false;
     // no tags found or too many
     if (!this->current_uid_.empty()) {
       auto tag = make_unique<nfc::NfcTag>(this->current_uid_);
@@ -262,6 +263,14 @@ void PN532::loop() {
     // this->turn_off_rf_();
     this->next_flow_ = 0;
     return;
+  } else {
+    if (this->target_still_present) {
+      this->current_uid_ = {};
+      this->next_flow_ = 0;
+      ESP_LOGD(TAG, "Tag still present");
+      return;
+    }
+    this->target_still_present = true;
   }
 
   uint8_t nfcid_length = read[5];
