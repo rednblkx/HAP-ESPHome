@@ -1,7 +1,7 @@
 from esphome import automation
 import esphome.codegen as cg
 import esphome.config_validation as cv
-from esphome.components import mdns, wifi, light, lock, sensor, switch, climate, pn532
+from esphome.components import mdns, wifi, light, lock, sensor, switch, climate, pn532, fan
 from esphome.const import PLATFORM_ESP32, CONF_ID, CONF_TRIGGER_ID
 from esphome.core import ID, Lambda
 from esphome.components.esp32 import add_idf_component
@@ -21,6 +21,7 @@ LightEntity = homekit_ns.class_('LightEntity')
 SensorEntity = homekit_ns.class_('SensorEntity')
 SwitchEntity = homekit_ns.class_('SwitchEntity')
 LockEntity = homekit_ns.class_('LockEntity')
+FanEntity = homekit_ns.class_('FanEntity')
 OnHkSuccessTrigger = homekit_ns.class_(
     "HKAuthTrigger", automation.Trigger.template(cg.std_string, cg.std_string)
 )
@@ -71,6 +72,7 @@ CONFIG_SCHEMA = cv.All(cv.Schema({
         cv.Optional("meta") : ACCESSORY_INFORMATION
         }),
     cv.Optional("sensor"):  cv.ensure_list({cv.Required(CONF_ID): cv.use_id(sensor.Sensor), cv.Optional("temp_units", default="CELSIUS") : cv.enum(TEMP_UNITS), cv.Optional("meta") : ACCESSORY_INFORMATION}),
+    cv.Optional("fan"):  cv.ensure_list({cv.Required(CONF_ID): cv.use_id(fan.Fan), cv.Optional("meta") : ACCESSORY_INFORMATION}),
     cv.Optional("switch"):  cv.ensure_list({cv.Required(CONF_ID): cv.use_id(switch.Switch), cv.Optional("meta") : ACCESSORY_INFORMATION}),
     cv.Optional("climate"):  cv.ensure_list({cv.Required(CONF_ID): cv.use_id(climate.Climate), cv.Optional("meta") : ACCESSORY_INFORMATION}),
 }).extend(cv.COMPONENT_SCHEMA),
@@ -124,6 +126,14 @@ async def to_code(config):
                 for m in l["meta"]:
                     info_temp.append([ACC_INFO[m], l["meta"][m]])
                 cg.add(lock_entity.setInfo(info_temp))
+    if "fan" in config:
+        for l in config["fan"]:
+            fan_entity = cg.Pvariable(ID(f"{l['id'].id}_hk_switch_entity", type=FanEntity), var.add_fan(await cg.get_variable(l['id'])))
+            if "meta" in l:
+                info_temp = []
+                for m in l["meta"]:
+                    info_temp.append([ACC_INFO[m], l["meta"][m]])
+                cg.add(fan_entity.setInfo(info_temp))
     if "switch" in config:
         for l in config["switch"]:
             switch_entity = cg.Pvariable(ID(f"{l['id'].id}_hk_switch_entity", type=SwitchEntity), var.add_switch(await cg.get_variable(l['id'])))
