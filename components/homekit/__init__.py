@@ -128,7 +128,7 @@ async def to_code(config):
                 cg.add(lock_entity.setInfo(info_temp))
     if "fan" in config:
         for l in config["fan"]:
-            fan_entity = cg.Pvariable(ID(f"{l['id'].id}_hk_switch_entity", type=FanEntity), var.add_fan(await cg.get_variable(l['id'])))
+            fan_entity = cg.Pvariable(ID(f"{l['id'].id}_hk_fan_entity", type=FanEntity), var.add_fan(await cg.get_variable(l['id'])))
             if "meta" in l:
                 info_temp = []
                 for m in l["meta"]:
