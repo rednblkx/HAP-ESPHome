@@ -1,0 +1,47 @@
+esphome:
+  name: fan_test
+
+esp32:
+  board: esp32-c3-devkitm-1
+  flash_size: 4MB
+  framework:
+    type: esp-idf
+    version: 5.2.1
+    platform_version: 6.7.0
+    sdkconfig_options:
+      CONFIG_COMPILER_OPTIMIZATION_SIZE: y
+      CONFIG_LWIP_MAX_SOCKETS: "16"
+      CONFIG_MBEDTLS_HKDF_C: y
+
+external_components:
+  source: github://rednblkx/HAP-ESPHome@main
+  refresh: 0s
+
+homekit_base:
+  setup_code: '159-35-728'
+
+homekit:
+  fan:
+    - id: fan_1
+      meta:
+        name: "My Fan"
+
+fan:
+  - platform: binary
+    id: fan_1
+    name: "My Fan"
+    output: fan_output
+
+output:
+  - platform: gpio
+    id: fan_output
+    pin:
+      number: GPIO8
+      inverted: true
+
+logger:
+  level: DEBUG
+
+wifi:
+  ssid: !secret wifi_ssid
+  password: !secret wifi_password

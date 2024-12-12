@@ -10,6 +10,9 @@
 #ifdef USE_LOCK
 #include "lock.h"
 #endif
+#ifdef USE_FAN
+#include "fan.hpp"
+#endif
 #ifdef USE_SWITCH
 #include "switch.hpp"
 #endif
@@ -46,6 +49,10 @@ namespace esphome
       #ifdef USE_HOMEKEY
       void set_nfc_ctx(pn532::PN532* nfcCtx);
       void set_hk_hw_finish(HKFinish color);
+      #endif
+      #ifdef USE_FAN
+      std::vector<FanEntity*> fans;
+      FanEntity* add_fan(fan::Fan* fanPtr);
       #endif
       #ifdef USE_SWITCH
       std::vector<SwitchEntity*> switches;
