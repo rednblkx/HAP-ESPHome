@@ -90,7 +90,7 @@ namespace esphome
       void on_light_update(light::LightState* obj) {
         bool rgb = obj->current_values.get_color_mode() & light::ColorCapability::RGB;
         bool level = obj->get_traits().supports_color_capability(light::ColorCapability::BRIGHTNESS);
-        bool temperature = obj->current_values.get_color_mode() & light::ColorCapability::COLOR_TEMPERATURE;
+        bool temperature = obj->current_values.get_color_mode() & (light::ColorCapability::COLOR_TEMPERATURE | light::ColorCapability::COLD_WARM_WHITE);
         if (rgb) {
           ESP_LOGD(TAG, "%s RED: %.2f, GREEN: %.2f, BLUE: %.2f", obj->get_name().c_str(), obj->current_values.get_red(), obj->current_values.get_green(), obj->current_values.get_blue());
         }
@@ -181,7 +181,8 @@ namespace esphome
           hap_serv_add_char(service, hap_char_hue_create(hue));
           hap_serv_add_char(service, hap_char_saturation_create(saturation * 100));
         }
-        if (lightPtr->get_traits().supports_color_capability(light::ColorCapability::COLOR_TEMPERATURE)) {
+        if (lightPtr->get_traits().supports_color_capability(light::ColorCapability::COLOR_TEMPERATURE) ||
+            lightPtr->get_traits().supports_color_capability(light::ColorCapability::COLD_WARM_WHITE)) {
           hap_serv_add_char(service, hap_char_color_temperature_create(lightPtr->current_values.get_color_temperature()));
         }
         ESP_LOGD(TAG, "ID HASH: %lu", lightPtr->get_object_id_hash());
