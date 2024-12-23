@@ -5,6 +5,7 @@
 #include <hap.h>
 #include <hap_apple_servs.h>
 #include <hap_apple_chars.h>
+#include <map>
 
 namespace esphome
 {
