@@ -22,6 +22,11 @@ namespace esphome
         v->setup();
       }
       #endif
+      #ifdef USE_FAN
+      for (const auto v : fans) {
+        v->setup();
+      }
+      #endif
       #ifdef USE_SWITCH
       for (const auto v : switches) {
         v->setup();
@@ -48,6 +53,9 @@ namespace esphome
       #ifdef USE_SENSOR
       ESP_LOGCONFIG(TAG, "Sensor HK Entities: %d", sensors.size());
       #endif
+      #ifdef USE_FAN
+      ESP_LOGCONFIG(TAG, "Fan HK Entities: %d", fans.size());
+      #endif
       #ifdef USE_SWITCH
       ESP_LOGCONFIG(TAG, "Switch HK Entities: %d", switches.size());
       #endif
@@ -70,6 +78,12 @@ namespace esphome
     }
     void HAPAccessory::set_hk_hw_finish(HKFinish color) {
       hkHwFinish = color;
+    }
+    #endif
+    #ifdef USE_FAN
+    FanEntity* HAPAccessory::add_fan(fan::Fan* fanPtr) {
+      fans.push_back(new FanEntity(fanPtr));
+      return fans.back();
     }
     #endif
     #ifdef USE_SWITCH
