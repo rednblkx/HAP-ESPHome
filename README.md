@@ -29,6 +29,7 @@ See [Components](#3-components) for documentation.
 | Lock   | Lock/Unlock                                                           | Homekey can be enabled but only the `pn532_spi` component is supported to be used with it                                                           |
 | Switch | On/Off                                                                |                                                                                                                                                     |
 | Sensor | Temperature, Humidity, Illuminance, Air Quality, CO2, CO, PM10, PM2.5 | `device_class` property has to be declared with the sensor type as per HASS [docs](https://www.home-assistant.io/integrations/sensor/#device-class) |
+| Fan    | On/Off                                                                |                                                                                                                                                     |
 
 ## 2. Prerequisites
 
