@@ -205,7 +205,27 @@ This is what handles the accessory logic like syncing states between HomeKit and
           serial_number: "42424242"
           fw_rev: "0.16.2"
   ```
+ - **fan** (Optional): Array of Fan Entities
+   - **id** (Required, [Fan](https://esphome.io/components/fan/)): Id of the fan entity
+   - **meta** (Optional): Accessory information
+     - **name** (Optional, string): Name of the accessory, defaults to name of the entity
+     - **model** (Optional, string): Model name for the accessory
+     - **manufacturer** (Optional, string): Manufacturer name for the accessory
+     - **serial_number** (Optional, string): Serial number for the accessory, defaults to internal object id
+     - **fw_rev** (Optional, string): Firmware revision for the accessory
 
+   Example:
+   ```yaml
+   homekit:
+     fan:
+       - id: my_fan
+         meta:
+           name: "Living Room Fan"
+           manufacturer: "AMICI&CO"
+           model: "VENTUS"
+           serial_number: "42424242"
+           fw_rev: "0.16.2"
+   ```
 ## 4. HomeKey
 
 > [!NOTE]
