@@ -102,7 +102,9 @@ void PN532::setup() {
     return;
   }
 
-  this->turn_off_rf_();
+  if(!keep_rf_on_) {
+    this->turn_off_rf_();
+  }
 }
 
 bool PN532::powerdown() {
@@ -245,7 +247,9 @@ void PN532::loop() {
         trigger->process(tag);
     }
     this->current_uid_ = {};
-    // this->turn_off_rf_();
+    if(!keep_rf_on_) {
+      this->turn_off_rf_();
+    }
     this->next_flow_ = 0;
     return;
   }
@@ -260,7 +264,9 @@ void PN532::loop() {
         trigger->process(tag);
     }
     this->current_uid_ = {};
-    // this->turn_off_rf_();
+    if(!keep_rf_on_) {
+      this->turn_off_rf_();
+    }
     this->next_flow_ = 0;
     return;
   } else {
@@ -346,7 +352,9 @@ void PN532::loop() {
 
   this->read_mode();
 
-  this->turn_off_rf_();
+  if(!keep_rf_on_) {
+    this->turn_off_rf_();
+  }
 
   this->next_flow_ = 0;
 }

@@ -54,6 +54,8 @@ class PN532 : public PollingComponent {
 
   void set_ecp_frame(std::vector<uint8_t>& frame) { ecp_frame = frame; };
 
+  void set_keep_rf_on(bool keep_rf_on) { keep_rf_on_ = keep_rf_on; }
+
   bool is_writing() { return this->next_task_ != READ; };
 
   void read_mode();
@@ -105,6 +107,7 @@ class PN532 : public PollingComponent {
   bool requested_read_{ false };
   bool target_still_present{ false };
   bool requested_ecp_{ false };
+  bool keep_rf_on_{ false };
   int next_flow_{ 0 };
   std::vector<PN532BinarySensor *> binary_sensors_;
   std::vector<nfc::NfcOnTagTrigger *> triggers_ontag_;

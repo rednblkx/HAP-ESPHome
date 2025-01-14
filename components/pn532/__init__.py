@@ -10,6 +10,7 @@ MULTI_CONF = True
 
 CONF_PN532_ID = "pn532_id"
 CONF_ON_FINISHED_WRITE = "on_finished_write"
+CONF_KEEP_RF_ON = "keep_rf_on"
 
 pn532_ns = cg.esphome_ns.namespace("pn532")
 PN532 = pn532_ns.class_("PN532", cg.PollingComponent)
@@ -42,6 +43,7 @@ PN532_SCHEMA = cv.Schema(
                 cv.GenerateID(CONF_TRIGGER_ID): cv.declare_id(nfc.NfcOnTagTrigger),
             }
         ),
+        cv.Optional(CONF_KEEP_RF_ON): cv.boolean,
     }
 ).extend(cv.polling_component_schema("1s"))
 
@@ -74,6 +76,9 @@ async def setup_pn532(var, config):
     for conf in config.get(CONF_ON_FINISHED_WRITE, []):
         trigger = cg.new_Pvariable(conf[CONF_TRIGGER_ID], var)
         await automation.build_automation(trigger, [], conf)
+
+    if CONF_KEEP_RF_ON in config:
+        cg.add(var.set_keep_rf_on(config[CONF_KEEP_RF_ON]))
 
 
 @automation.register_condition(
