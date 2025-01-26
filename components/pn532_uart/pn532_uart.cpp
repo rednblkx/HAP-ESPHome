@@ -82,7 +82,6 @@ bool PN532Uart::read_response(uint8_t command, std::vector<uint8_t> &data) {
     return false;
   }
 
-
   // full length of message, including command response
   uint16_t full_len = header[3];
   if (extended_frame) {
@@ -106,7 +105,6 @@ bool PN532Uart::read_response(uint8_t command, std::vector<uint8_t> &data) {
 
   data.resize(len + 1);
   this->read_array(data.data(), len + 1);
-
 
   ESP_LOGV(TAG, "Response data: %s", format_hex_pretty(data).c_str());
 
@@ -143,5 +141,5 @@ void PN532Uart::dump_config() {
   PN532::dump_config();
 }
 
-}  // namespace pn532_spi
+}  // namespace pn532_uart
 }  // namespace esphome
