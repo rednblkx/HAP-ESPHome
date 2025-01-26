@@ -111,7 +111,7 @@ bool PN532::powerdown() {
   updates_enabled_ = false;
   requested_read_ = false;
   ESP_LOGI(TAG, "Powering down PN532");
-  if (!this->write_command_({PN532_COMMAND_POWERDOWN, 0b10100000})) {  // enable i2c,spi wakeup
+  if (!this->write_command_({PN532_COMMAND_POWERDOWN, 0b10110000})) {  // enable i2c,spi,hsu wakeup
     ESP_LOGE(TAG, "Error writing powerdown command to PN532");
     return false;
   }
