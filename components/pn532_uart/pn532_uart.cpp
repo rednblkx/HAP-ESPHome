@@ -11,7 +11,7 @@ namespace pn532_uart {
 
 static const char *const TAG = "pn532_uart";
 
-static const uint8_t WAKEUP_REQUEST[] = {0x55, 0x55, 0x00, 0x00};
+static const uint8_t WAKEUP_REQUEST[] = {0x55, 0x55, 0x00, 0x00, 0x00};
 
 void PN532Uart::setup() {
   uint8_t buf;
@@ -26,9 +26,6 @@ void PN532Uart::setup() {
   while (this->available()) {
     this->read_byte(&buf);
   }
-
-  // Wait for the PN532 to be ready
-  delay(2);
 
   PN532::setup();
 }
@@ -58,11 +55,6 @@ bool PN532Uart::read_data(std::vector<uint8_t> &data, uint8_t len) {
 
 bool PN532Uart::read_response(uint8_t command, std::vector<uint8_t> &data) {
   ESP_LOGV(TAG, "Reading response");
-
-  // Workaround for timing issues
-  if(!this->available()) {
-      delay(3);
-  }
 
   std::vector<uint8_t> header(7);
   this->read_array(header.data(), 7);
