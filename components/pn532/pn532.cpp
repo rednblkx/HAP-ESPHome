@@ -17,6 +17,24 @@ static const char *const TAG = "pn532";
 void PN532::setup() {
   ESP_LOGCONFIG(TAG, "Setting up PN532...");
 
+  // To avoid cases where the PN532 falls asleep again, we need to set a default SAM configuration first
+  if (!this->write_command_({
+          PN532_COMMAND_SAMCONFIGURATION,
+          0x01,  // normal mode
+          0xff,  // max. timeout
+      })) {
+    ESP_LOGE(TAG, "No wakeup ack");
+    this->mark_failed();
+    return;
+  }
+
+  std::vector<uint8_t> wakeup_result;
+  if (!this->read_response(PN532_COMMAND_SAMCONFIGURATION, wakeup_result)) {
+    this->error_code_ = WAKEUP_FAILED;
+    this->mark_failed();
+    return;
+  }
+
   // Get version data
   if (!this->write_command_({PN532_COMMAND_VERSION_DATA})) {
     ESP_LOGW(TAG, "Error sending version command, trying again...");
@@ -35,24 +53,6 @@ void PN532::setup() {
   }
   ESP_LOGD(TAG, "Found chip PN5%02X", version_data[0]);
   ESP_LOGD(TAG, "Firmware ver. %d.%d", version_data[1], version_data[2]);
-
-  if (!this->write_command_({
-          PN532_COMMAND_SAMCONFIGURATION,
-          0x01,  // normal mode
-          0x14,  // zero timeout (not in virtual card mode)
-          0x01,
-      })) {
-    ESP_LOGE(TAG, "No wakeup ack");
-    this->mark_failed();
-    return;
-  }
-
-  std::vector<uint8_t> wakeup_result;
-  if (!this->read_response(PN532_COMMAND_SAMCONFIGURATION, wakeup_result)) {
-    this->error_code_ = WAKEUP_FAILED;
-    this->mark_failed();
-    return;
-  }
 
   // Set up SAM (secure access module)
   uint8_t sam_timeout = std::min<uint8_t>(255u, this->update_interval_ / 50);
