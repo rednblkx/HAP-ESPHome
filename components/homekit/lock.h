@@ -45,6 +45,7 @@ namespace esphome
       };
       std::vector<HKAuthTrigger *> triggers_onhk_;
       std::vector<HKFailTrigger *> triggers_onhk_fail_;
+      std::vector<HKStartTrigger *> triggers_onhk_start_;
       static int nfcAccess_write(hap_write_data_t write_data[], int count, void* serv_priv, void* write_priv);
       static void hap_event_handler(hap_event_t event, void* data);
       #endif
@@ -62,6 +63,7 @@ namespace esphome
       void set_hk_hw_finish(HKFinish color);
       void register_onhk_trigger(HKAuthTrigger* trig);
       void register_onhkfail_trigger(HKFailTrigger* trig);
+      void register_onhkstart_trigger(HKStartTrigger* trig);
       #endif
     };
   }

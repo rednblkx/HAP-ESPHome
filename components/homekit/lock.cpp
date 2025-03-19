@@ -256,6 +256,9 @@ namespace esphome
       void LockEntity::register_onhkfail_trigger(HKFailTrigger* trig) {
         triggers_onhk_fail_.push_back(trig);
       }
+      void LockEntity::register_onhkstart_trigger(HKStartTrigger* trig) {
+        triggers_onhk_start_.push_back(trig);
+      }
       void LockEntity::set_hk_hw_finish(HKFinish color) {
         ESP_LOGI(TAG, "SELECTED HK FINISH: %s", intToFinishString(color).c_str());
         hap_tlv8_val_t tlvData = {
@@ -284,6 +287,10 @@ namespace esphome
           if (versions.size() > 0) {
             ESP_LOGD(TAG, "HK SUPPORTED VERSIONS: %s", format_hex_pretty(versions).c_str());
             if (versions.data()[versions.size() - 2] == 0x90 && versions.data()[versions.size() - 1] == 0x0) {
+              for (auto &&t : triggers_onhk_start_)
+              {
+                t->process();
+              }
               HKAuthenticationContext authCtx(lambda, readerData, savedHKdata);
               auto authResult = authCtx.authenticate(KeyFlow(kFlowFAST));
               if (std::get<0>(authResult).size() > 0 && std::get<2>(authResult) != kFlowFailed) {

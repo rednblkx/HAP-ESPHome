@@ -28,6 +28,9 @@ OnHkSuccessTrigger = homekit_ns.class_(
 OnHkFailTrigger = homekit_ns.class_(
     "HKFailTrigger", automation.Trigger.template()
 )
+OnHkStartTrigger = homekit_ns.class_(
+    "HKStartTrigger", automation.Trigger.template()
+)
 CONF_IDENTIFY_LAMBDA = "identify_fn"
 
 TEMP_UNITS = {
@@ -66,6 +69,11 @@ CONFIG_SCHEMA = cv.All(cv.Schema({
         cv.Optional("on_hk_fail"): automation.validate_automation(
             {
                 cv.GenerateID(CONF_TRIGGER_ID): cv.declare_id(OnHkFailTrigger),
+            }
+        ),
+        cv.Optional("on_hk_start"): automation.validate_automation(
+            {
+                cv.GenerateID(CONF_TRIGGER_ID): cv.declare_id(OnHkStartTrigger),
             }
         ),
         cv.Optional("hk_hw_finish", default="BLACK") : cv.enum(HK_HW_FINISH),
@@ -120,6 +128,10 @@ async def to_code(config):
                 for conf in l.get("on_hk_fail", []):
                     trigger = cg.new_Pvariable(conf[CONF_TRIGGER_ID])
                     cg.add(lock_entity.register_onhkfail_trigger(trigger))
+                    await automation.build_automation(trigger, [], conf)
+                for conf in l.get("on_hk_start", []):
+                    trigger = cg.new_Pvariable(conf[CONF_TRIGGER_ID])
+                    cg.add(lock_entity.register_onhkstart_trigger(trigger))
                     await automation.build_automation(trigger, [], conf)
             if "meta" in l:
                 info_temp = []

@@ -10,5 +10,8 @@ namespace esphome
     void HKFailTrigger::process() {
       this->trigger();
     }
+    void HKStartTrigger::process() {
+      this->trigger();
+    }
   }
 }
