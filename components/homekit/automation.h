@@ -16,5 +16,10 @@ namespace esphome
     public:
       void process();
     };
+    class HKStartTrigger : public Trigger<>
+    {
+    public:
+      void process();
+    };
   }
 }
