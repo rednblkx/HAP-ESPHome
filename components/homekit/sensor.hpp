@@ -7,26 +7,30 @@
 #include <hap.h>
 #include <hap_apple_servs.h>
 #include <hap_apple_chars.h>
+#include "hap_entity.h"
 namespace esphome
 {
   namespace homekit
   {
-    class SensorEntity
+    class SensorEntity : public HAPEntity
     {
     private:
       static constexpr const char* TAG = "SensorEntity";
-      std::map<AInfo, const char*> accessory_info = {{NAME, NULL}, {MODEL, "HAP-SENSOR"}, {SN, NULL}, {MANUFACTURER, "rednblkx"}, {FW_REV, "0.1"}};
       sensor::Sensor* sensorPtr;
-      void on_sensor_update(sensor::Sensor* obj, float v) {
+      static void on_sensor_update(sensor::Sensor* obj, float v) {
         ESP_LOGD(TAG, "%s value: %.2f", obj->get_name().c_str(), v);
         hap_acc_t* acc = hap_acc_get_by_aid(hap_get_unique_aid(std::to_string(obj->get_object_id_hash()).c_str()));
         if (acc) {
           hap_serv_t* hs = hap_serv_get_next(hap_acc_get_first_serv(acc));
           if (hs) {
             hap_char_t* on_char = hap_serv_get_first_char(hs);
-            ESP_LOGD(TAG, "HAP CURRENT VALUE: %.2f", hap_char_get_val(on_char)->f);
+            ESP_LOGD(TAG, "HAP CURRENT VALUE - f:%.2f u:%lu", hap_char_get_val(on_char)->f, hap_char_get_val(on_char)->u);
             hap_val_t state;
-            state.f = v;
+            if (ceilf(v) == v) {
+              state.u = v;
+            } else {
+              state.f = v;
+            }
             hap_char_update_val(on_char, &state);
           }
         }
@@ -37,7 +41,12 @@ namespace esphome
           sensor::Sensor* sensorPtr = (sensor::Sensor*)serv_priv;
           ESP_LOGD(TAG, "Read called for Accessory %s (%s)", std::to_string(sensorPtr->get_object_id_hash()).c_str(), sensorPtr->get_name().c_str());
           hap_val_t sensorValue;
-          sensorValue.f = sensorPtr->get_state();
+          float v = sensorPtr->get_state();
+          if (ceilf(v) == v) {
+            sensorValue.u = v;
+          } else {
+            sensorValue.f = v;
+          }
           hap_char_update_val(hc, &sensorValue);
           return HAP_SUCCESS;
         }
@@ -48,13 +57,7 @@ namespace esphome
         return HAP_SUCCESS;
       }
     public:
-      SensorEntity(sensor::Sensor* sensorPtr) : sensorPtr(sensorPtr) {}
-      void setInfo(std::map<AInfo, const char*> info) {
-        std::map<AInfo, const char*> merged_info;
-        merged_info.merge(info);
-        merged_info.merge(this->accessory_info);
-        this->accessory_info.swap(merged_info);
-      }
+      SensorEntity(sensor::Sensor* sensorPtr) : HAPEntity({{MODEL, "HAP-SENSOR"}}), sensorPtr(sensorPtr) {}
       void setup() {
         hap_serv_t* service = nullptr;
 
@@ -72,10 +75,10 @@ namespace esphome
           service = hap_serv_air_quality_sensor_create(sensorPtr->state);
         }
         else if (std::equal(device_class.begin(), device_class.end(), strdup("carbon_dioxide"))) {
-          service = hap_serv_carbon_dioxide_sensor_create(sensorPtr->state);
+          service = hap_serv_carbon_dioxide_sensor_create(false);
         }
         else if (std::equal(device_class.begin(), device_class.end(), strdup("carbon_monoxide"))) {
-          service = hap_serv_carbon_monoxide_sensor_create(sensorPtr->state);
+          service = hap_serv_carbon_monoxide_sensor_create(false);
         }
         else if (std::equal(device_class.begin(), device_class.end(), strdup("pm10"))) {
           service = hap_serv_create(HAP_SERV_UUID_AIR_QUALITY_SENSOR);
@@ -123,7 +126,7 @@ namespace esphome
           /* Add the Accessory to the HomeKit Database */
           hap_add_bridged_accessory(accessory, hap_get_unique_aid(std::to_string(sensorPtr->get_object_id_hash()).c_str()));
           if (!sensorPtr->is_internal())
-            sensorPtr->add_on_state_callback([this](float v) { this->on_sensor_update(sensorPtr, v); });
+            sensorPtr->add_on_state_callback([this](float v) { SensorEntity::on_sensor_update(sensorPtr, v); });
           ESP_LOGI(TAG, "Sensor '%s' linked to HomeKit", accessory_name.c_str());
         }
       }

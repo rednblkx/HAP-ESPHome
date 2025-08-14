@@ -5,17 +5,16 @@
 #include <hap.h>
 #include <hap_apple_servs.h>
 #include <hap_apple_chars.h>
-#include <map>
+#include "hap_entity.h"
 
 namespace esphome
 {
   namespace homekit
   {
-    class SwitchEntity
+    class SwitchEntity : public HAPEntity
     {
     private:
       static constexpr const char* TAG = "SwitchEntity";
-      std::map<AInfo, const char*> accessory_info = {{NAME, NULL}, {MODEL, "HAP-SWITCH"}, {SN, NULL}, {MANUFACTURER, "rednblkx"}, {FW_REV, "0.1"}};
       switch_::Switch* switchPtr;
       static int switch_write(hap_write_data_t write_data[], int count, void* serv_priv, void* write_priv) {
         switch_::Switch* switchPtr = (switch_::Switch*)serv_priv;
@@ -37,7 +36,7 @@ namespace esphome
         }
         return ret;
       }
-      void on_switch_update(switch_::Switch* obj, bool v) {
+      static void on_switch_update(switch_::Switch* obj, bool v) {
         ESP_LOGD(TAG, "%s state: %d", obj->get_name().c_str(), v);
         hap_acc_t* acc = hap_acc_get_by_aid(hap_get_unique_aid(std::to_string(obj->get_object_id_hash()).c_str()));
         if (acc) {
@@ -53,13 +52,7 @@ namespace esphome
         return HAP_SUCCESS;
       }
     public:
-      SwitchEntity(switch_::Switch* switchPtr) : switchPtr(switchPtr) {}
-      void setInfo(std::map<AInfo, const char*> info) {
-        std::map<AInfo, const char*> merged_info;
-        merged_info.merge(info);
-        merged_info.merge(this->accessory_info);
-        this->accessory_info.swap(merged_info);
-      }
+      SwitchEntity(switch_::Switch* switchPtr) : HAPEntity({{MODEL, "HAP-SWITCH"}}), switchPtr(switchPtr) {}
       void setup() {
         hap_acc_cfg_t acc_cfg = {
             .model = strdup(accessory_info[MODEL]),
@@ -102,7 +95,7 @@ namespace esphome
         /* Add the Accessory to the HomeKit Database */
         hap_add_bridged_accessory(accessory, hap_get_unique_aid(std::to_string(switchPtr->get_object_id_hash()).c_str()));
         if (!switchPtr->is_internal())
-          switchPtr->add_on_state_callback([this](bool v) { this->on_switch_update(switchPtr, v); });
+          switchPtr->add_on_state_callback([this](bool v) { SwitchEntity::on_switch_update(switchPtr, v); });
         ESP_LOGI(TAG, "Switch '%s' linked to HomeKit", accessory_name.c_str());
       }
     };

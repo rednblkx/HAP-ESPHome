@@ -5,17 +5,16 @@
 #include <hap.h>
 #include <hap_apple_servs.h>
 #include <hap_apple_chars.h>
-#include <map>
+#include "hap_entity.h"
 
 namespace esphome
 {
   namespace homekit
   {
-    class LightEntity
+    class LightEntity : public HAPEntity
     {
     private:
       static constexpr const char* TAG = "LightEntity";
-      std::map<AInfo, const char*> accessory_info = {{NAME, NULL}, {MODEL, "HAP-LIGHT"}, {SN, NULL}, {MANUFACTURER, "rednblkx"}, {FW_REV, "0.1"}};
       light::LightState* lightPtr;
       static int light_write(hap_write_data_t write_data[], int count, void* serv_priv, void* write_priv) {
         light::LightState* lightPtr = (light::LightState*)serv_priv;
@@ -87,7 +86,7 @@ namespace esphome
         }
         return ret;
       }
-      void on_light_update(light::LightState* obj) {
+      static void on_light_update(light::LightState* obj) {
         bool rgb = obj->current_values.get_color_mode() & light::ColorCapability::RGB;
         bool level = obj->get_traits().supports_color_capability(light::ColorCapability::BRIGHTNESS);
         bool temperature = obj->current_values.get_color_mode() & (light::ColorCapability::COLOR_TEMPERATURE | light::ColorCapability::COLD_WARM_WHITE);
@@ -135,13 +134,7 @@ namespace esphome
         return HAP_SUCCESS;
       }
     public:
-      LightEntity(light::LightState* lightPtr) : lightPtr(lightPtr) {}
-      void setInfo(std::map<AInfo, const char*> info) {
-        std::map<AInfo, const char*> merged_info;
-        merged_info.merge(info);
-        merged_info.merge(this->accessory_info);
-        this->accessory_info.swap(merged_info);
-      }
+      LightEntity(light::LightState* lightPtr) : HAPEntity({{MODEL, "HAP-LIGHT"}}), lightPtr(lightPtr) {}
       void setup() {
         hap_acc_cfg_t acc_cfg = {
             .model = strdup(accessory_info[MODEL]),
@@ -197,7 +190,7 @@ namespace esphome
         /* Add the Accessory to the HomeKit Database */
         hap_add_bridged_accessory(accessory, hap_get_unique_aid(std::to_string(lightPtr->get_object_id_hash()).c_str()));
         if (!lightPtr->is_internal())
-          lightPtr->add_new_target_state_reached_callback([this]() { this->on_light_update(lightPtr); });
+          lightPtr->add_new_target_state_reached_callback([this]() { LightEntity::on_light_update(lightPtr); });
 
         ESP_LOGI(TAG, "Light '%s' linked to HomeKit", accessory_name.c_str());
       }
