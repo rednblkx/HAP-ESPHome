@@ -42,8 +42,8 @@ esp32:
   board: <insert board id>
   framework:
     type: esp-idf
-    version: 5.2.1
-    platform_version: 6.7.0
+    version: 5.5.0
+    platform_version: 55.03.30-2
     sdkconfig_options:
       CONFIG_COMPILER_OPTIMIZATION_SIZE: y
       CONFIG_LWIP_MAX_SOCKETS: "16"
