@@ -179,7 +179,7 @@ light:
     rgb_order: GRB
     pin: GPIO8
     num_leds: 1
-    rmt_channel: 0
+    # rmt_channel: 0
     chipset: ws2812
     name: "My Light"
     restore_mode: RESTORE_DEFAULT_OFF
