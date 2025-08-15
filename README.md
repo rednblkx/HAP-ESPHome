@@ -26,7 +26,7 @@ See [Components](#3-components) for documentation.
 | Type   | Attributes                                                            | Notes                                                                                                                                               |
 |--------|-----------------------------------------------------------------------|-----------------------------------------------------------------------------------------------------------------------------------------------------|
 | Light  | On/Off, Brightness, RGB, Color Temperature                            |                                                                                                                                                     |
-| Lock   | Lock/Unlock                                                           | Homekey can be enabled but only the `pn532_spi` component is supported to be used with it                                                           |
+| Lock   | Lock/Unlock                                                           | Homekey can be enabled but only the `pn532_spi` or the `pn532_uart` components are supported to be used with it                                  |
 | Switch | On/Off                                                                |                                                                                                                                                     |
 | Sensor | Temperature, Humidity, Illuminance, Air Quality, CO2, CO, PM10, PM2.5 | `device_class` property has to be declared with the sensor type as per HASS [docs](https://www.home-assistant.io/integrations/sensor/#device-class) |
 | Fan    | On/Off                                                                |                                                                                                                                                     |
@@ -57,6 +57,8 @@ esp32:
 Project is divided into two different components, `homekit_base` which handles the bridge logic and `homekit` that handles the actual accessory logic (lights, switches, etc.).
 
 This repository also includes the `pn532` and `pn532_spi` components which are just slightly modified versions of the official ones from the ESPHome repository to suit HomeKey needs with no extra options added to them nor deleted, however, it's not guaranteed to be kept up to date with upstream changes.
+
+There is also a `pn532_uart` component that can be used when the PN532 module needs to be connected via the HSU interface. However it is recomended to use the SPI interface whenever posible, as it is more reliable.
 
 > [!TIP]
 > For configuration examples, you can see the `.yaml` files in this repository, e.g. [lights-c3.yaml](lights-c3.yaml)
@@ -140,7 +142,7 @@ This is what handles the accessory logic like syncing states between HomeKit and
     - **manufacturer** (Optional, string): Manufacturer name for the accessory
     - **serial_number** (Optional, string): Serial number for the accessory, defaults to internal object id
     - **fw_rev** (Optional, string): Firmware revision for the accessory
-  - **nfc_id** (Optional, [PN532](https://esphome.io/components/binary_sensor/pn532.html#over-spi)): Id of the `pn532_spi` component, used for the HomeKey functionality
+  - **nfc_id** (Optional, [PN532](https://esphome.io/components/binary_sensor/pn532.html#over-spi)): Id of the `pn532_spi` or `pn532_uart` component, used for the HomeKey functionality
   - **on_hk_success** (Optional, [Action](https://esphome.io/automations/actions)): Action to be executed when Homekey is successfully authenticated
   - **on_hk_fail** (Optional, [Action](https://esphome.io/automations/actions)): Action to be executed when Homekey fails to authenticate
   - **hk_hw_finish**(Optional, string): Color of the Homekey card from the predefined `BLACK`, `SILVER`, `GOLD` and `TAN`, defaults to `BLACK`
@@ -239,10 +241,13 @@ This is what handles the accessory logic like syncing states between HomeKit and
 ### 4.2 Setup
 
 > [!IMPORTANT]
-> Only PN532 over SPI(`pn532_spi` component) is supported at the moment due to required modifications that haven't been ported to other protocols or chips
+> Only PN532 over SPI(`pn532_spi` component) or the PN532 over HSU(`pn532_uart` component) are supported at the moment due to required modifications that haven't been ported to other protocols or chips
 
 > [!NOTE]
 > For quick reactions and to avoid issues, don't raise the `update_interval` over 500ms
+> Esphome is turning of the RF side of the PN532 module whenever posible to avoid wifi interference. However this is causing problems with Homekey. You have to set the `keep_rf_on` option for reliable Homekey communication.
+
+Example configuration for the SPI inteface:
 
 ```yaml
 spi:
@@ -254,11 +259,32 @@ pn532_spi:
   id: nfc_spi_module
   cs_pin: 7
   update_interval: 100ms
+  keep_rf_on: true
 
 homekit:
   lock:
     - id: <insert lock id>
       nfc_id: nfc_spi_module
+```
+
+Alternative example configuration for the HSU inteface:
+```yaml
+uart:
+  id: uart_nfc
+  tx_pin: 17
+  rx_pin: 16
+  baud_rate: 115200
+
+pn532_spi:
+  id: nfc_uart_module
+  uart_id: uart_nfc
+  update_interval: 100ms
+  keep_rf_on: true
+
+homekit:
+  lock:
+    - id: <insert lock id>
+      nfc_id: nfc_uart_module
 ```
 
 ## Support & Contributing
