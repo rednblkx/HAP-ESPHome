@@ -205,7 +205,35 @@ This is what handles the accessory logic like syncing states between HomeKit and
           serial_number: "42424242"
           fw_rev: "0.16.2"
   ```
- - **fan** (Optional): Array of Fan Entities
+- **cover** (Optional): Array of Cover entities (exposed as Garage Door Openers in HomeKit)
+  - **id** (Required, [Cover](https://esphome.io/components/cover/)): Id of the cover entity
+  - **meta** (Optional): Accessory information
+    - **name** (Optional, string): Name of the accessory, defaults to name of the entity
+    - **model** (Optional, string): Model name for the accessory
+    - **manufacturer** (Optional, string): Manufacturer name for the accessory
+    - **serial_number** (Optional, string): Serial number for the accessory, defaults to internal object id
+    - **fw_rev** (Optional, string): Firmware revision for the accessory
+
+  Example:
+  ```yaml
+    cover:
+      - id: garage_door
+        meta:
+          name: "Garage Door"
+          manufacturer: "ESPHome"
+          model: "HAP-Garage"
+          serial_number: "GD123456"
+          fw_rev: "1.0.0"
+  ```
+
+  Note: Cover entities are exposed as HomeKit Garage Door Openers with the following state mapping:
+  - ESPHome `COVER_OPERATION_IDLE` + `position=1.0` → HomeKit Open
+  - ESPHome `COVER_OPERATION_IDLE` + `position=0.0` → HomeKit Closed
+  - ESPHome `COVER_OPERATION_OPENING` → HomeKit Opening
+  - ESPHome `COVER_OPERATION_CLOSING` → HomeKit Closing
+  - ESPHome `COVER_OPERATION_IDLE` + partial position → HomeKit Stopped
+
+- **fan** (Optional): Array of Fan Entities
    - **id** (Required, [Fan](https://esphome.io/components/fan/)): Id of the fan entity
    - **meta** (Optional): Accessory information
      - **name** (Optional, string): Name of the accessory, defaults to name of the entity
