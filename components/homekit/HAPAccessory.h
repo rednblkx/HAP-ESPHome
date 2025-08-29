@@ -22,6 +22,9 @@
 #ifdef USE_CLIMATE
 #include "climate.hpp"
 #endif
+#ifdef USE_COVER
+#include "cover.hpp"
+#endif
 namespace esphome
 {
   namespace homekit
@@ -65,6 +68,10 @@ namespace esphome
       #ifdef USE_CLIMATE
       std::vector<ClimateEntity*> climates;
       ClimateEntity* add_climate(climate::Climate* sensorPtr);
+      #endif
+      #ifdef USE_COVER
+      std::vector<CoverEntity*> covers;
+      CoverEntity* add_cover(cover::Cover* coverPtr);
       #endif
     };
   }

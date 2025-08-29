@@ -104,5 +104,11 @@ namespace esphome
       return climates.back();
   }
     #endif
+    #ifdef USE_COVER
+    CoverEntity* HAPAccessory::add_cover(cover::Cover* coverPtr) {
+      covers.push_back(new CoverEntity(coverPtr));
+      return covers.back();
+    }
+    #endif
   }
 }
