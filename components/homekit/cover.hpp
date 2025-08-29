@@ -24,13 +24,17 @@ namespace esphome
         hap_write_data_t* write;
         for (i = 0; i < count; i++) {
           write = &write_data[i];
-          if (!strcmp(hap_char_get_type_uuid(write->hc), HAP_CHAR_UUID_GARAGE_DOOR_TARGET_STATE)) {
+          const char* char_uuid = hap_char_get_type_uuid(write->hc);
+          
+          // Check for target door state characteristic (0x32)
+          if (!strcmp(char_uuid, "00000032-0000-1000-8000-0026BB765291") || 
+              !strcmp(char_uuid, "32")) {
             ESP_LOGD(TAG, "Received Write for garage door '%s' -> %s", coverPtr->get_name().c_str(), write->val.i == 0 ? "Open" : "Close");
             if (write->val.i == 0) {
               // Open
               coverPtr->open();
             } else {
-              // Close
+              // Close  
               coverPtr->close();
             }
             hap_char_update_val(write->hc, &(write->val));
@@ -47,36 +51,42 @@ namespace esphome
         ESP_LOGD(TAG, "%s state: %s", obj->get_name().c_str(), cover_operation_to_str(obj->current_operation));
         hap_acc_t* acc = hap_acc_get_by_aid(hap_get_unique_aid(std::to_string(obj->get_object_id_hash()).c_str()));
         if (acc) {
-          hap_serv_t* hs = hap_acc_get_serv_by_uuid(acc, HAP_SERV_UUID_GARAGE_DOOR_OPENER);
-          hap_char_t* current_state = hap_serv_get_char_by_uuid(hs, HAP_CHAR_UUID_GARAGE_DOOR_CURRENT_STATE);
-          hap_char_t* target_state = hap_serv_get_char_by_uuid(hs, HAP_CHAR_UUID_GARAGE_DOOR_TARGET_STATE);
-          hap_val_t c, t;
+          hap_serv_t* hs = hap_acc_get_serv_by_uuid(acc, 0x00000041); // Garage Door Opener service
           
-          // Map ESPHome cover states to HomeKit garage door states
-          switch (obj->current_operation) {
-            case cover::COVER_OPERATION_IDLE:
-              if (obj->position == 1.0f) {
-                c.i = 0; // Open
-                t.i = 0; // Target Open
-              } else if (obj->position == 0.0f) {
-                c.i = 1; // Closed
-                t.i = 1; // Target Closed
-              } else {
-                c.i = 4; // Stopped
+          if (hs) {
+            hap_char_t* current_state = hap_serv_get_char_by_uuid(hs, 0x0000000E); // Current Door State
+            hap_char_t* target_state = hap_serv_get_char_by_uuid(hs, 0x00000032);  // Target Door State
+            
+            if (current_state && target_state) {
+              hap_val_t c, t;
+              
+              // Map ESPHome cover states to HomeKit garage door states
+              switch (obj->current_operation) {
+                case cover::COVER_OPERATION_IDLE:
+                  if (obj->position == 1.0f) {
+                    c.i = 0; // Open
+                    t.i = 0; // Target Open
+                  } else if (obj->position == 0.0f) {
+                    c.i = 1; // Closed
+                    t.i = 1; // Target Closed
+                  } else {
+                    c.i = 4; // Stopped
+                  }
+                  break;
+                case cover::COVER_OPERATION_OPENING:
+                  c.i = 2; // Opening
+                  t.i = 0; // Target Open
+                  break;
+                case cover::COVER_OPERATION_CLOSING:
+                  c.i = 3; // Closing
+                  t.i = 1; // Target Closed
+                  break;
               }
-              break;
-            case cover::COVER_OPERATION_OPENING:
-              c.i = 2; // Opening
-              t.i = 0; // Target Open
-              break;
-            case cover::COVER_OPERATION_CLOSING:
-              c.i = 3; // Closing
-              t.i = 1; // Target Closed
-              break;
+              
+              hap_char_update_val(current_state, &c);
+              hap_char_update_val(target_state, &t);
+            }
           }
-          
-          hap_char_update_val(current_state, &c);
-          hap_char_update_val(target_state, &t);
         }
       }
       
@@ -131,7 +141,21 @@ namespace esphome
           target_state = 1;
         }
         
-        service = hap_serv_garage_door_opener_create(current_state, target_state);
+        // Try to create garage door service using specific function if available
+        // Otherwise fallback to manual creation
+        service = hap_serv_create(0x00000041); // Garage Door Opener service UUID (short form)
+        if (service) {
+          // Add required characteristics manually using standard functions if available
+          // Current Door State characteristic (0x0E)  
+          hap_serv_add_char(service, hap_char_create(0x0000000E, HAP_CHAR_PERM_PR | HAP_CHAR_PERM_EV, HAP_VAL_TYPE_UINT8, sizeof(uint8_t), &current_state, 0, 4, 1));
+          // Target Door State characteristic (0x32)
+          hap_serv_add_char(service, hap_char_create(0x00000032, HAP_CHAR_PERM_PR | HAP_CHAR_PERM_PW | HAP_CHAR_PERM_EV, HAP_VAL_TYPE_UINT8, sizeof(uint8_t), &target_state, 0, 1, 1));
+        }
+        
+        if (!service) {
+          ESP_LOGE(TAG, "Failed to create garage door service");
+          return;
+        }
 
         ESP_LOGD(TAG, "ID HASH: %lu", coverPtr->get_object_id_hash());
         hap_serv_set_priv(service, coverPtr);
