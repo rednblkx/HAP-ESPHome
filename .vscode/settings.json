@@ -95,5 +95,6 @@
     "fstream": "cpp",
     "future": "cpp",
     "esp_hap_database.h": "c"
-  }
+  },
+  "C_Cpp.errorSquiggles": "enabled"
 }

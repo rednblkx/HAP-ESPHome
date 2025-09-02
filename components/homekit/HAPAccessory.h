@@ -4,6 +4,10 @@
 #include <esphome/core/defines.h>
 #include <esphome/core/component.h>
 #include "const.h"
+#include <nvs.h> // For nvs_handle
+#include "../pn532/pn532.h" // For pn532::PN532
+#include "../pn532/pn532_mifare_classic.cpp" // If readerData_t is defined here
+#include "../pn532/pn532.h" // for pn532::PN532
 #ifdef USE_LIGHT
 #include "light.hpp"
 #endif

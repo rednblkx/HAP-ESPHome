@@ -1,6 +1,15 @@
-#include <esphome/core/defines.h>
+#include <nvs.h>           // For nvs_handle
+#include "../pn532/pn532.h" // For pn532::PN532
+#include "../pn532/pn532_mifare_classic.h" // For readerData_t (adjust if needed)
 #ifdef USE_LOCK
 #include "lock.h"
+// Type definitions for nvs_handle, readerData_t, pn532::PN532
+#include <nvs.h>
+#include "../pn532/pn532.h" // for pn532::PN532
+#include "../pn532/pn532_mifare_classic.cpp" // if readerData_t is defined here
+// Required for std::ostringstream, std::setw, std::setfill
+#include <sstream>
+#include <iomanip>
 
 namespace esphome {
 namespace homekit {
@@ -140,11 +149,12 @@ void LockEntity::on_lock_update(lock::Lock *obj) {
            lock_state_to_string(obj->state));
   hap_acc_t *acc = hap_acc_get_by_aid(
       hap_get_unique_aid(std::to_string(obj->get_object_id_hash()).c_str()));
-  hap_serv_t *hs = hap_acc_get_serv_by_uuid(acc, HAP_SERV_UUID_LOCK_MECHANISM);
+  // Use string UUID per HomeKit spec
+  hap_serv_t *hs = hap_acc_get_serv_by_uuid(acc, "00000041-0000-1000-8000-0026BB765291");
   hap_char_t *current_state =
-      hap_serv_get_char_by_uuid(hs, HAP_CHAR_UUID_LOCK_CURRENT_STATE);
+  hap_serv_get_char_by_uuid(hs, "0000000E-0000-1000-8000-0026BB765291");
   hap_char_t *target_state =
-      hap_serv_get_char_by_uuid(hs, HAP_CHAR_UUID_LOCK_TARGET_STATE);
+  hap_serv_get_char_by_uuid(hs, "00000032-0000-1000-8000-0026BB765291");
   hap_val_t c;
   hap_val_t t;
   if (obj->state == lock::LockState::LOCK_STATE_LOCKED ||
@@ -174,12 +184,12 @@ int LockEntity::lock_write(hap_write_data_t write_data[], int count,
   hap_write_data_t *write;
   for (i = 0; i < count; i++) {
     write = &write_data[i];
-    if (!strcmp(hap_char_get_type_uuid(write->hc),
-                HAP_CHAR_UUID_LOCK_TARGET_STATE)) {
+  if (!strcmp(hap_char_get_type_uuid(write->hc),
+        "00000032-0000-1000-8000-0026BB765291")) {
       ESP_LOGD("lock_write", "Target State req: %d", write->val.i);
       hap_char_update_val(write->hc, &(write->val));
-      hap_char_t *c = hap_serv_get_char_by_uuid(
-          hap_char_get_parent(write->hc), HAP_CHAR_UUID_LOCK_CURRENT_STATE);
+    hap_char_t *c = hap_serv_get_char_by_uuid(
+      hap_char_get_parent(write->hc), "0000000E-0000-1000-8000-0026BB765291");
       ESP_LOGD("lock_write", "Current State: %d", hap_char_get_val(c)->i);
       hap_char_update_val(c, &(write->val));
       write->val.i ? lockPtr->lock() : lockPtr->unlock();
@@ -281,8 +291,8 @@ std::string intToFinishString(HKFinish d) {
 std::string hex_representation(const std::vector<uint8_t> &v) {
   std::string hex_tmp;
   for (auto x : v) {
-    std::ostringstream oss;
-    oss << std::hex << std::setw(2) << std::setfill('0') << (unsigned)x;
+  std::ostringstream oss;
+  oss << std::hex << std::setw(2) << std::setfill('0') << (unsigned)x;
     hex_tmp += oss.str();
   }
   return hex_tmp;

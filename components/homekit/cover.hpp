@@ -3,9 +3,14 @@
 #ifdef USE_COVER
 #include <esphome/core/application.h>
 #include <hap.h>
+#include <sstream>
+#include <iomanip>
 #include <hap_apple_servs.h>
 #include <hap_apple_chars.h>
 #include "hap_entity.h"
+#include <nvs.h> // For nvs_handle
+#include "../pn532/pn532.h" // For pn532::PN532
+#include "../pn532/pn532_mifare_classic.cpp" // If readerData_t is defined here
 
 namespace esphome
 {
@@ -27,8 +32,7 @@ namespace esphome
           const char* char_uuid = hap_char_get_type_uuid(write->hc);
           
           // Check for target door state characteristic (0x32)
-          if (!strcmp(char_uuid, "00000032-0000-1000-8000-0026BB765291") || 
-              !strcmp(char_uuid, "32")) {
+          if (!strcmp(char_uuid, "00000032-0000-1000-8000-0026BB765291")) {
             ESP_LOGD(TAG, "Received Write for garage door '%s' -> %s", coverPtr->get_name().c_str(), write->val.i == 0 ? "Open" : "Close");
             if (write->val.i == 0) {
               // Open
@@ -51,11 +55,11 @@ namespace esphome
         ESP_LOGD(TAG, "%s state: %s", obj->get_name().c_str(), cover_operation_to_str(obj->current_operation));
         hap_acc_t* acc = hap_acc_get_by_aid(hap_get_unique_aid(std::to_string(obj->get_object_id_hash()).c_str()));
         if (acc) {
-          hap_serv_t* hs = hap_acc_get_serv_by_uuid(acc, 0x00000041); // Garage Door Opener service
+          hap_serv_t* hs = hap_acc_get_serv_by_uuid(acc, "00000041-0000-1000-8000-0026BB765291"); // Garage Door Opener service
           
           if (hs) {
-            hap_char_t* current_state = hap_serv_get_char_by_uuid(hs, 0x0000000E); // Current Door State
-            hap_char_t* target_state = hap_serv_get_char_by_uuid(hs, 0x00000032);  // Target Door State
+            hap_char_t* current_state = hap_serv_get_char_by_uuid(hs, "0000000E-0000-1000-8000-0026BB765291"); // Current Door State
+            hap_char_t* target_state = hap_serv_get_char_by_uuid(hs, "00000032-0000-1000-8000-0026BB765291");  // Target Door State
             
             if (current_state && target_state) {
               hap_val_t c, t;
@@ -143,13 +147,13 @@ namespace esphome
         
         // Try to create garage door service using specific function if available
         // Otherwise fallback to manual creation
-        service = hap_serv_create(0x00000041); // Garage Door Opener service UUID (short form)
+  service = hap_serv_create("00000041-0000-1000-8000-0026BB765291"); // Garage Door Opener service UUID
         if (service) {
           // Add required characteristics manually using standard functions if available
           // Current Door State characteristic (0x0E)  
-          hap_serv_add_char(service, hap_char_create(0x0000000E, HAP_CHAR_PERM_PR | HAP_CHAR_PERM_EV, HAP_VAL_TYPE_UINT8, sizeof(uint8_t), &current_state, 0, 4, 1));
+          hap_serv_add_char(service, hap_char_create("0000000E-0000-1000-8000-0026BB765291", HAP_CHAR_PERM_PR | HAP_CHAR_PERM_EV, HAP_VAL_TYPE_UINT8, sizeof(uint8_t), &current_state, 0, 4, 1));
           // Target Door State characteristic (0x32)
-          hap_serv_add_char(service, hap_char_create(0x00000032, HAP_CHAR_PERM_PR | HAP_CHAR_PERM_PW | HAP_CHAR_PERM_EV, HAP_VAL_TYPE_UINT8, sizeof(uint8_t), &target_state, 0, 1, 1));
+          hap_serv_add_char(service, hap_char_create("00000032-0000-1000-8000-0026BB765291", HAP_CHAR_PERM_PR | HAP_CHAR_PERM_PW | HAP_CHAR_PERM_EV, HAP_VAL_TYPE_UINT8, sizeof(uint8_t), &target_state, 0, 1, 1));
         }
         
         if (!service) {
