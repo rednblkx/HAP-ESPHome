@@ -63,12 +63,16 @@ namespace esphome
           if (hs) {
             hap_char_t* current_state = hap_serv_get_char_by_uuid(hs, HAP_CHAR_UUID_CURRENT_DOOR_STATE); // Current Door State
             hap_char_t* target_state = hap_serv_get_char_by_uuid(hs, HAP_CHAR_UUID_TARGET_DOOR_STATE);  // Target Door State
+            hap_char_t* obstruction_detected = hap_serv_get_char_by_uuid(hs, HAP_CHAR_UUID_OBSTRUCTION_DETECTED); // Obstruction Detected
             
-            if (current_state && target_state) {
-              hap_val_t c, t;
+            if (current_state && target_state && obstruction_detected) {
+              hap_val_t c, t, obstruction;
               
               // Read current target_state value to preserve it when stopped
               hap_char_get_val(target_state, &t);
+              
+              // Initialize obstruction as false by default
+              obstruction.b = false;
               
               // Map ESPHome cover states to HomeKit garage door states
               switch (obj->current_operation) {
@@ -81,6 +85,10 @@ namespace esphome
                     t.i = 1; // Target Closed
                   } else {
                     c.i = 4; // Stopped
+                    // Detect potential obstruction: cover stopped in an intermediate position
+                    // This could indicate an obstruction was encountered
+                    obstruction.b = true;
+                    ESP_LOGD(TAG, "Garage door '%s' stopped at intermediate position (%.2f), potential obstruction detected", obj->get_name().c_str(), obj->position);
                   }
                   break;
                 case cover::COVER_OPERATION_OPENING:
@@ -100,6 +108,10 @@ namespace esphome
               }
               if (hap_char_get_val(target_state, &prev) == HAP_SUCCESS && prev.i != t.i) {
                 hap_char_update_val(target_state, &t);
+              }
+              if (hap_char_get_val(obstruction_detected, &prev) == HAP_SUCCESS && prev.b != obstruction.b) {
+                hap_char_update_val(obstruction_detected, &obstruction);
+                ESP_LOGD(TAG, "Garage door '%s' obstruction status updated to: %s", obj->get_name().c_str(), obstruction.b ? "true" : "false");
               }
             }
           }
