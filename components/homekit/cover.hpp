@@ -58,7 +58,7 @@ namespace esphome
         ESP_LOGD(TAG, "%s state: %s", obj->get_name().c_str(), cover_operation_to_str(obj->current_operation));
         hap_acc_t* acc = hap_acc_get_by_aid(hap_get_unique_aid(std::to_string(obj->get_object_id_hash()).c_str()));
         if (acc) {
-          hap_serv_t* hs = hap_acc_get_serv_by_uuid(acc, "00000041-0000-1000-8000-0026BB765291"); // Garage Door Opener service
+          hap_serv_t* hs = hap_acc_get_serv_by_uuid(acc, HAP_SERV_UUID_GARAGE_DOOR_OPENER); // Garage Door Opener
           
           if (hs) {
             hap_char_t* current_state = hap_serv_get_char_by_uuid(hs, HAP_CHAR_UUID_CURRENT_DOOR_STATE); // Current Door State
@@ -153,7 +153,7 @@ namespace esphome
         
         // Try to create garage door service using specific function if available
         // Otherwise fallback to manual creation
-  service = hap_serv_create("00000041-0000-1000-8000-0026BB765291"); // Garage Door Opener service UUID
+  service = hap_serv_create(HAP_SERV_UUID_GARAGE_DOOR_OPENER); // Garage Door Opener service
         if (service) {
           // Add required characteristics manually using standard functions if available
           // Current Door State characteristic (0x0E)  

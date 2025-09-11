@@ -148,8 +148,7 @@ void LockEntity::on_lock_update(lock::Lock *obj) {
            lock_state_to_string(obj->state));
   hap_acc_t *acc = hap_acc_get_by_aid(
       hap_get_unique_aid(std::to_string(obj->get_object_id_hash()).c_str()));
-  // Use string UUID per HomeKit spec
-  hap_serv_t *hs = hap_acc_get_serv_by_uuid(acc, "00000041-0000-1000-8000-0026BB765291");
+  hap_serv_t *hs = hap_acc_get_serv_by_uuid(acc, HAP_SERV_UUID_GARAGE_DOOR_OPENER);
   hap_char_t *current_state =
   hap_serv_get_char_by_uuid(hs, "0000000E-0000-1000-8000-0026BB765291");
   hap_char_t *target_state =
