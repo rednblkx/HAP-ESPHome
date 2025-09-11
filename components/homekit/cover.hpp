@@ -8,9 +8,6 @@
 #include <hap_apple_servs.h>
 #include <hap_apple_chars.h>
 #include "hap_entity.h"
-#include <nvs.h> // For nvs_handle
-#include "../pn532/pn532.h" // For pn532::PN532
-#include "../pn532/pn532_mifare_classic.cpp" // If readerData_t is defined here
 
 namespace esphome
 {
