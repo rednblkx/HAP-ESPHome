@@ -67,12 +67,14 @@ cover:
     
     open_action:
       - logger.log: "Opening garage door"
+      - output.turn_off: garage_close_relay
       - output.turn_on: garage_open_relay
       - delay: 1s
       - output.turn_off: garage_open_relay
       
     close_action:
       - logger.log: "Closing garage door"
+      - output.turn_off: garage_open_relay
       - output.turn_on: garage_close_relay
       - delay: 1s
       - output.turn_off: garage_close_relay
