@@ -1,6 +1,6 @@
 # HAP Garage Door Example
 
-This example demonstrates how to set up a garage door using the HAP-ESPHome cover component.
+This example demonstrates how to set up a garage door using ESPHome cover component. HomeKit cover integration will be available once cover support is added to the upstream HAP-ESPHome repository.
 
 ```yaml
 esphome:
@@ -17,6 +17,14 @@ esp32:
   board: esp32dev
   framework:
     type: esp-idf
+
+external_components:
+  source: github://rednblkx/HAP-ESPHome@main
+  refresh: 0s
+
+# Future HomeKit base configuration (uncomment when cover support is added)
+# homekit_base:
+#   setup_code: '159-35-728'
 
 # Example relay outputs for controlling garage door motor
 output:
@@ -84,23 +92,16 @@ cover:
       - output.turn_off: garage_open_relay
       - output.turn_off: garage_close_relay
 
-external_components:
-  source: github://rednblkx/HAP-ESPHome@main
-  refresh: 0s
-
-homekit_base:
-  setup_code: '159-35-728'
-
-# HomeKit integration - exposes cover as garage door opener
-homekit:
-  cover:
-    - id: garage_door
-      meta:
-        name: "Main Garage Door"
-        manufacturer: "ESPHome"
-        model: "Smart Garage Controller"
-        serial_number: "GD123456"
-        fw_rev: "1.0.0"
+# Future HomeKit cover configuration (uncomment when cover support is added)
+# homekit:
+#   cover:
+#     - id: garage_door
+#       meta:
+#         name: "Main Garage Door"
+#         manufacturer: "ESPHome"
+#         model: "Smart Garage Controller"
+#         serial_number: "GD123456"
+#         fw_rev: "1.0.0"
 
 logger:
   level: DEBUG
@@ -108,18 +109,34 @@ logger:
 
 ## Features
 
-- Exposes ESPHome cover as HomeKit Garage Door Opener
-- Maps cover states to proper garage door states in HomeKit
-- Supports open, close, and stop operations
-- Shows current door state (open/closed/opening/closing/stopped)
-- Integrates with Home app and Siri voice control
+- Standard ESPHome garage door control (ready for HomeKit when upstream support is added)
+- Template cover configured as garage door
+- GPIO relay control for opening/closing
+- Position sensors for detecting door state  
+- Logger debugging support
+
+## Hardware Requirements
+
+- ESP32 development board
+- 2 relays for motor control (open/close)
+- 2 limit switches or sensors for position detection
+- Appropriate power supply and wiring
 
 ## State Mapping
 
-| ESPHome State | HomeKit State |
-|---------------|---------------|
-| COVER_OPERATION_IDLE + position=1.0 | Open (0) |
-| COVER_OPERATION_IDLE + position=0.0 | Closed (1) |
-| COVER_OPERATION_OPENING | Opening (2) |
-| COVER_OPERATION_CLOSING | Closing (3) |
-| COVER_OPERATION_IDLE + partial position | Stopped (4) |
+| Sensor State | Cover State |
+|--------------|-------------|
+| garage_open_sensor = ON | COVER_OPEN |
+| garage_close_sensor = ON | COVER_CLOSED |
+| Both sensors = OFF | Unknown/Intermediate |
+
+## Future HomeKit Integration
+
+This configuration is ready for HomeKit integration once cover support is added to the upstream HAP-ESPHome repository. The commented HomeKit configuration sections can be uncommented when support becomes available.
+
+The planned HomeKit integration will provide:
+- Garage Door Opener service in Apple Home app
+- Proper state synchronization between ESPHome and HomeKit
+- Support for Open/Close commands from HomeKit
+
+**Note:** This example currently uses the upstream `rednblkx/HAP-ESPHome` repository which does not yet include cover support for HomeKit integration.
