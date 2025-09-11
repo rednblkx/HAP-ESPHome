@@ -289,8 +289,8 @@ std::string intToFinishString(HKFinish d) {
 std::string hex_representation(const std::vector<uint8_t> &v) {
   std::string hex_tmp;
   for (auto x : v) {
-  std::ostringstream oss;
-  oss << std::hex << std::setw(2) << std::setfill('0') << (unsigned)x;
+    std::ostringstream oss;
+    oss << std::hex << std::setw(2) << std::setfill('0') << (unsigned)x;
     hex_tmp += oss.str();
   }
   return hex_tmp;
