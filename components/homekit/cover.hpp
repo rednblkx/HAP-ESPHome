@@ -29,16 +29,22 @@ namespace esphome
           
           // Check for target door state characteristic (0x32)
           if (!strcmp(hap_char_get_type_uuid(write->hc), HAP_CHAR_UUID_TARGET_DOOR_STATE)) {
-            ESP_LOGD(TAG, "Received Write for garage door '%s' -> %s", coverPtr->get_name().c_str(), write->val.i == 0 ? "Open" : "Close");
-            if (write->val.i == 0) {
-              // Open
-              coverPtr->open();
+            // Validate TargetDoorState value (only 0=Open or 1=Closed are valid)
+            if (write->val.i != 0 && write->val.i != 1) {
+              ESP_LOGW(TAG, "Invalid TargetDoorState value %d for garage door '%s'. Only 0 (Open) or 1 (Closed) are valid.", write->val.i, coverPtr->get_name().c_str());
+              *(write->status) = HAP_STATUS_VAL_INVALID;
             } else {
-              // Close  
-              coverPtr->close();
+              ESP_LOGD(TAG, "Received Write for garage door '%s' -> %s", coverPtr->get_name().c_str(), write->val.i == 0 ? "Open" : "Close");
+              if (write->val.i == 0) {
+                // Open
+                coverPtr->open();
+              } else {
+                // Close  
+                coverPtr->close();
+              }
+              hap_char_update_val(write->hc, &(write->val));
+              *(write->status) = HAP_STATUS_SUCCESS;
             }
-            hap_char_update_val(write->hc, &(write->val));
-            *(write->status) = HAP_STATUS_SUCCESS;
           }
           else {
             *(write->status) = HAP_STATUS_RES_ABSENT;
