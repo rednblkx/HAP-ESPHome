@@ -1,6 +1,8 @@
+#ifdef USE_LOCK
+#ifdef USE_HOMEKEY
 #include <nvs.h>           // For nvs_handle
 #include "../pn532/pn532.h" // For pn532::PN532
-#ifdef USE_LOCK
+#endif
 #include "lock.h"
 // Required for std::ostringstream, std::setw, std::setfill
 #include <sstream>
@@ -8,9 +10,11 @@
 
 namespace esphome {
 namespace homekit {
+#ifdef USE_HOMEKEY
 readerData_t LockEntity::readerData;
 nvs_handle LockEntity::savedHKdata;
 pn532::PN532 *LockEntity::nfc_ctx;
+#endif
 #ifdef USE_HOMEKEY
 int LockEntity::nfcAccess_write(hap_write_data_t write_data[], int count,
                                 void *serv_priv, void *write_priv) {
