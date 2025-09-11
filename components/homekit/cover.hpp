@@ -93,8 +93,14 @@ namespace esphome
                   break;
               }
               
-              hap_char_update_val(current_state, &c);
-              hap_char_update_val(target_state, &t);
+              // Only update characteristics if values have actually changed
+              hap_val_t prev;
+              if (hap_char_get_val(current_state, &prev) == HAP_SUCCESS && prev.i != c.i) {
+                hap_char_update_val(current_state, &c);
+              }
+              if (hap_char_get_val(target_state, &prev) == HAP_SUCCESS && prev.i != t.i) {
+                hap_char_update_val(target_state, &t);
+              }
             }
           }
         }
@@ -155,11 +161,10 @@ namespace esphome
         // Otherwise fallback to manual creation
   service = hap_serv_create(HAP_SERV_UUID_GARAGE_DOOR_OPENER); // Garage Door Opener service
         if (service) {
-          // Add required characteristics manually using standard functions if available
-          // Current Door State characteristic (0x0E)  
-          hap_serv_add_char(service, hap_char_create(HAP_CHAR_UUID_CURRENT_DOOR_STATE, HAP_CHAR_PERM_PR | HAP_CHAR_PERM_EV, HAP_VAL_TYPE_UINT8, sizeof(uint8_t), &current_state, 0, 4, 1));
-          // Target Door State characteristic (0x32)
-          hap_serv_add_char(service, hap_char_create(HAP_CHAR_UUID_TARGET_DOOR_STATE, HAP_CHAR_PERM_PR | HAP_CHAR_PERM_PW | HAP_CHAR_PERM_EV, HAP_VAL_TYPE_UINT8, sizeof(uint8_t), &target_state, 0, 1, 1));
+          // Add required characteristics using typed creators
+          hap_serv_add_char(service, hap_char_current_door_state_create(current_state));
+          hap_serv_add_char(service, hap_char_target_door_state_create(target_state));
+          hap_serv_add_char(service, hap_char_obstruction_detected_create(false));
         }
         
         if (!service) {
