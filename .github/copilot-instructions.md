@@ -91,6 +91,7 @@ external_components:
 - **Switch**: On/Off
 - **Sensor**: Temperature, Humidity, Illuminance, Air Quality, CO2, CO, PM10, PM2.5
 - **Fan**: On/Off
+- **Cover**: Garage Door Opener
 
 ## Common Tasks
 
