@@ -3,8 +3,6 @@
 #ifdef USE_COVER
 #include <esphome/core/application.h>
 #include <hap.h>
-#include <sstream>
-#include <iomanip>
 #include <hap_apple_servs.h>
 #include <hap_apple_chars.h>
 #include "hap_entity.h"
