@@ -27,7 +27,7 @@ cover:
       - logger.log: "Stopping garage door"
 
 external_components:
-  source: github://donavanbecker/HAP-ESPHome@copilot/fix-1
+  source: components
   refresh: 0s
 
 homekit_base:

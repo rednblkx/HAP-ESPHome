@@ -85,7 +85,7 @@ cover:
       - output.turn_off: garage_close_relay
 
 external_components:
-  source: github://donavanbecker/HAP-ESPHome@copilot/fix-1
+  source: github://rednblkx/HAP-ESPHome@main
   refresh: 0s
 
 homekit_base:
