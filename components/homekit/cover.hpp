@@ -60,6 +60,9 @@ namespace esphome
             if (current_state && target_state) {
               hap_val_t c, t;
               
+              // Read current target_state value to preserve it when stopped
+              hap_char_get_val(target_state, &t);
+              
               // Map ESPHome cover states to HomeKit garage door states
               switch (obj->current_operation) {
                 case cover::COVER_OPERATION_IDLE:
