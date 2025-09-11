@@ -1,12 +1,7 @@
 #include <nvs.h>           // For nvs_handle
 #include "../pn532/pn532.h" // For pn532::PN532
-#include "../pn532/pn532_mifare_classic.h" // For readerData_t (adjust if needed)
 #ifdef USE_LOCK
 #include "lock.h"
-// Type definitions for nvs_handle, readerData_t, pn532::PN532
-#include <nvs.h>
-#include "../pn532/pn532.h" // for pn532::PN532
-#include "../pn532/pn532_mifare_classic.cpp" // if readerData_t is defined here
 // Required for std::ostringstream, std::setw, std::setfill
 #include <sstream>
 #include <iomanip>
