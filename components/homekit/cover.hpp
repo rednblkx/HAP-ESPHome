@@ -167,8 +167,12 @@ namespace esphome
           target_state = 1;
         }
         
-        // Prefer typed creator if available
+        // Prefer typed creator if available (guard for older SDKs)
+        #ifdef HAP_SERV_GARAGE_DOOR_OPENER_CREATE
         service = hap_serv_garage_door_opener_create(current_state, target_state, false /* obstruction_detected */);
+        #else
+        service = nullptr;
+        #endif
         if (!service) {
           // Fallback: manual service + typed characteristic creators
           service = hap_serv_create(HAP_SERV_UUID_GARAGE_DOOR_OPENER);
