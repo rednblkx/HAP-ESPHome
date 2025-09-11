@@ -169,14 +169,16 @@ namespace esphome
           target_state = 1;
         }
         
-        // Try to create garage door service using specific function if available
-        // Otherwise fallback to manual creation
-  service = hap_serv_create(HAP_SERV_UUID_GARAGE_DOOR_OPENER); // Garage Door Opener service
-        if (service) {
-          // Add required characteristics using typed creators
-          hap_serv_add_char(service, hap_char_current_door_state_create(current_state));
-          hap_serv_add_char(service, hap_char_target_door_state_create(target_state));
-          hap_serv_add_char(service, hap_char_obstruction_detected_create(false));
+        // Prefer typed creator if available
+        service = hap_serv_garage_door_opener_create(current_state, target_state, false /* obstruction_detected */);
+        if (!service) {
+          // Fallback: manual service + typed characteristic creators
+          service = hap_serv_create(HAP_SERV_UUID_GARAGE_DOOR_OPENER);
+          if (service) {
+            hap_serv_add_char(service, hap_char_current_door_state_create(current_state));
+            hap_serv_add_char(service, hap_char_target_door_state_create(target_state));
+            hap_serv_add_char(service, hap_char_obstruction_detected_create(false));
+          }
         }
         
         if (!service) {
