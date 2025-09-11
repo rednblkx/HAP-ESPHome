@@ -26,10 +26,9 @@ namespace esphome
         hap_write_data_t* write;
         for (i = 0; i < count; i++) {
           write = &write_data[i];
-          const char* char_uuid = hap_char_get_type_uuid(write->hc);
           
           // Check for target door state characteristic (0x32)
-          if (!strcmp(char_uuid, "00000032-0000-1000-8000-0026BB765291")) {
+          if (!strcmp(hap_char_get_type_uuid(write->hc), HAP_CHAR_UUID_TARGET_DOOR_STATE)) {
             ESP_LOGD(TAG, "Received Write for garage door '%s' -> %s", coverPtr->get_name().c_str(), write->val.i == 0 ? "Open" : "Close");
             if (write->val.i == 0) {
               // Open
@@ -55,8 +54,8 @@ namespace esphome
           hap_serv_t* hs = hap_acc_get_serv_by_uuid(acc, "00000041-0000-1000-8000-0026BB765291"); // Garage Door Opener service
           
           if (hs) {
-            hap_char_t* current_state = hap_serv_get_char_by_uuid(hs, "0000000E-0000-1000-8000-0026BB765291"); // Current Door State
-            hap_char_t* target_state = hap_serv_get_char_by_uuid(hs, "00000032-0000-1000-8000-0026BB765291");  // Target Door State
+            hap_char_t* current_state = hap_serv_get_char_by_uuid(hs, HAP_CHAR_UUID_CURRENT_DOOR_STATE); // Current Door State
+            hap_char_t* target_state = hap_serv_get_char_by_uuid(hs, HAP_CHAR_UUID_TARGET_DOOR_STATE);  // Target Door State
             
             if (current_state && target_state) {
               hap_val_t c, t;
@@ -148,9 +147,9 @@ namespace esphome
         if (service) {
           // Add required characteristics manually using standard functions if available
           // Current Door State characteristic (0x0E)  
-          hap_serv_add_char(service, hap_char_create("0000000E-0000-1000-8000-0026BB765291", HAP_CHAR_PERM_PR | HAP_CHAR_PERM_EV, HAP_VAL_TYPE_UINT8, sizeof(uint8_t), &current_state, 0, 4, 1));
+          hap_serv_add_char(service, hap_char_create(HAP_CHAR_UUID_CURRENT_DOOR_STATE, HAP_CHAR_PERM_PR | HAP_CHAR_PERM_EV, HAP_VAL_TYPE_UINT8, sizeof(uint8_t), &current_state, 0, 4, 1));
           // Target Door State characteristic (0x32)
-          hap_serv_add_char(service, hap_char_create("00000032-0000-1000-8000-0026BB765291", HAP_CHAR_PERM_PR | HAP_CHAR_PERM_PW | HAP_CHAR_PERM_EV, HAP_VAL_TYPE_UINT8, sizeof(uint8_t), &target_state, 0, 1, 1));
+          hap_serv_add_char(service, hap_char_create(HAP_CHAR_UUID_TARGET_DOOR_STATE, HAP_CHAR_PERM_PR | HAP_CHAR_PERM_PW | HAP_CHAR_PERM_EV, HAP_VAL_TYPE_UINT8, sizeof(uint8_t), &target_state, 0, 1, 1));
         }
         
         if (!service) {
