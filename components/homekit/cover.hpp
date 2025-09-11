@@ -17,6 +17,7 @@ namespace esphome
     {
     private:
       static constexpr const char* TAG = "CoverEntity";
+      static constexpr float POSITION_THRESHOLD = 0.02f; // 2% threshold for position comparisons
       cover::Cover* coverPtr;
       
       static int cover_write(hap_write_data_t write_data[], int count, void* serv_priv, void* write_priv) {
@@ -72,10 +73,10 @@ namespace esphome
               // Map ESPHome cover states to HomeKit garage door states
               switch (obj->current_operation) {
                 case cover::COVER_OPERATION_IDLE:
-                  if (obj->position == 1.0f) {
+                  if (obj->position >= (1.0f - POSITION_THRESHOLD)) {
                     c.i = 0; // Open
                     t.i = 0; // Target Open
-                  } else if (obj->position == 0.0f) {
+                  } else if (obj->position <= POSITION_THRESHOLD) {
                     c.i = 1; // Closed
                     t.i = 1; // Target Closed
                   } else {
@@ -142,10 +143,10 @@ namespace esphome
         int current_state = 1; // Default to closed
         int target_state = 1;  // Default to closed
         
-        if (coverPtr->position == 1.0f) {
+        if (coverPtr->position >= (1.0f - POSITION_THRESHOLD)) {
           current_state = 0; // Open
           target_state = 0;
-        } else if (coverPtr->position == 0.0f) {
+        } else if (coverPtr->position <= POSITION_THRESHOLD) {
           current_state = 1; // Closed  
           target_state = 1;
         }
