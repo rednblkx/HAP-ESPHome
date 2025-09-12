@@ -4,10 +4,10 @@
 
 namespace esphome {
 namespace homekit {
+#ifdef USE_HOMEKEY
 readerData_t LockEntity::readerData;
 nvs_handle_t LockEntity::savedHKdata;
 pn532::PN532 *LockEntity::nfc_ctx;
-#ifdef USE_HOMEKEY
 int LockEntity::nfcAccess_write(hap_write_data_t write_data[], int count,
                                 void *serv_priv, void *write_priv) {
   LockEntity *parent = (LockEntity *)serv_priv;
