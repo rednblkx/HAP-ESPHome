@@ -187,7 +187,7 @@ namespace esphome
           if (service) {
             hap_serv_add_char(service, hap_char_current_door_state_create(current_state));
             hap_serv_add_char(service, hap_char_target_door_state_create(target_state));
-            hap_serv_add_char(service, hap_char_obstruction_detected_create(false));
+            hap_serv_add_char(service, hap_char_obstruction_detect_create(false));
           }
         }
         
