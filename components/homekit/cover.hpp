@@ -72,7 +72,8 @@ namespace esphome
               hap_val_t c, t, obstruction;
               
               // Read current target_state value to preserve it when stopped
-              if (hap_char_get_val(target_state, &t) != HAP_SUCCESS) {
+              t = hap_char_get_val(target_state);
+              if (t.t == HAP_VAL_TYPE_INVALID) {
                 // Set default if unable to read current value
                 t.i = 1; // Default to closed
               }
@@ -109,13 +110,16 @@ namespace esphome
               
               // Only update characteristics if values have actually changed
               hap_val_t prev;
-              if (hap_char_get_val(current_state, &prev) == HAP_SUCCESS && prev.i != c.i) {
+              prev = hap_char_get_val(current_state);
+              if (prev.t != HAP_VAL_TYPE_INVALID && prev.i != c.i) {
                 hap_char_update_val(current_state, &c);
               }
-              if (hap_char_get_val(target_state, &prev) == HAP_SUCCESS && prev.i != t.i) {
+              prev = hap_char_get_val(target_state);
+              if (prev.t != HAP_VAL_TYPE_INVALID && prev.i != t.i) {
                 hap_char_update_val(target_state, &t);
               }
-              if (hap_char_get_val(obstruction_detected, &prev) == HAP_SUCCESS && prev.b != obstruction.b) {
+              prev = hap_char_get_val(obstruction_detected);
+              if (prev.t != HAP_VAL_TYPE_INVALID && prev.b != obstruction.b) {
                 hap_char_update_val(obstruction_detected, &obstruction);
                 ESP_LOGD(TAG, "Garage door '%s' obstruction status updated to: %s", obj->get_name().c_str(), obstruction.b ? "true" : "false");
               }
@@ -138,7 +142,7 @@ namespace esphome
             .manufacturer = strdup(accessory_info[MANUFACTURER]),
             .fw_rev = strdup(accessory_info[FW_REV]),
             .hw_rev = NULL,
-            .pv = strdup("1.1.0"),
+            .pv = strdup((char*)"1.1.0"),
             .cid = HAP_CID_BRIDGE,
             .identify_routine = acc_identify,
         };
