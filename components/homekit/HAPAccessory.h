@@ -4,7 +4,6 @@
 #include <esphome/core/defines.h>
 #include <esphome/core/component.h>
 #include "const.h"
-#ifdef USE_HOMEKEY
 #include <nvs.h> // For nvs_handle
 #include "../pn532/pn532.h" // For pn532::PN532
 #endif
