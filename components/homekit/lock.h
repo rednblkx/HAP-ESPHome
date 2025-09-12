@@ -29,7 +29,7 @@ namespace esphome
       static nvs_handle_t savedHKdata;
       static readerData_t readerData;
       #endif
-      uint8_t tlv8_data[128];
+      std::vector<uint8_t> tlv8_data;
       #ifdef USE_HOMEKEY
       std::vector<uint8_t> ecpData{ 0x6A, 0x2, 0xCB, 0x2, 0x6, 0x2, 0x11, 0x0 };
       static pn532::PN532* nfc_ctx;

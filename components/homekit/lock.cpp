@@ -53,14 +53,15 @@ int LockEntity::nfcAccess_write(hap_write_data_t write_data[], int count,
       HK_HomeKit ctx(parent->readerData, parent->savedHKdata, "READERDATA",
                      tlv_rx_data);
       auto result = ctx.processResult();
-      memcpy(parent->tlv8_data, result.data(), result.size());
+      parent->tlv8_data.resize(result.size());
+      memcpy(parent->tlv8_data.data(), result.data(), result.size());
       // if (strlen((const char*)readerData.reader_group_id) > 0) {
       //   memcpy(ecpData + 8, readerData.reader_group_id,
       //   sizeof(readerData.reader_group_id)); with_crc16(ecpData, 16, ecpData
       //   + 16);
       // }
       hap_val_t new_val;
-      new_val.t.buf = parent->tlv8_data;
+      new_val.t.buf = parent->tlv8_data.data();
       new_val.t.buflen = result.size();
       hap_char_update_val(write->hc, &new_val);
       *(write->status) = HAP_STATUS_SUCCESS;
