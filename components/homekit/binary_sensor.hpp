@@ -74,13 +74,12 @@ namespace esphome
           }
           
           if (state_char) {
-            hap_val_t state;
-            // Use correct HAP value type for ContactSensorState (u8)
-            if (device_class == "door" || device_class == "window" || device_class == "opening" ||
-                device_class == "garage_door" || device_class == "vibration" || device_class == "tamper") {
-              state.u = v ? 1 : 0; // CONTACT_NOT_DETECTED(1) / CONTACT_DETECTED(0)
-            } else {
+            hap_val_t state = {};
+            // MotionDetected is boolean; most other *_DETECTED/STATE chars are u8 enums (0/1).
+            if (std::strcmp(char_uuid, HAP_CHAR_UUID_MOTION_DETECTED) == 0) {
               state.b = v;
+            } else {
+              state.u = v ? 1 : 0;
             }
             hap_char_update_val(state_char, &state);
             ESP_LOGD(TAG, "Binary sensor '%s' (%s) state updated to: %s", obj->get_name().c_str(), device_class.c_str(), v ? "true" : "false");
