@@ -120,6 +120,10 @@ namespace esphome
       BinarySensorEntity(binary_sensor::BinarySensor* binarySensorPtr) : HAPEntity({{MODEL, "HAP-BINARY-SENSOR"}}), binarySensorPtr(binarySensorPtr) {}
       
       void setup() {
+        if (this->binarySensorPtr == nullptr) {
+          ESP_LOGE(TAG, "BinarySensorEntity constructed with null BinarySensor*");
+          return;
+        }
         hap_acc_cfg_t acc_cfg = {
             .model = strdup(accessory_info[MODEL]),
             .manufacturer = strdup(accessory_info[MANUFACTURER]),
