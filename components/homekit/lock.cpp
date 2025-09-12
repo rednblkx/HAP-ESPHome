@@ -1,20 +1,12 @@
+#include <esphome/core/defines.h>
 #ifdef USE_LOCK
-#ifdef USE_HOMEKEY
-#include <nvs.h>           // For nvs_handle
-#include "../pn532/pn532.h" // For pn532::PN532
-#endif
 #include "lock.h"
-// Required for std::ostringstream, std::setw, std::setfill
-#include <sstream>
-#include <iomanip>
 
 namespace esphome {
 namespace homekit {
-#ifdef USE_HOMEKEY
 readerData_t LockEntity::readerData;
-nvs_handle_t LockEntity::savedHKdata;
+nvs_handle LockEntity::savedHKdata;
 pn532::PN532 *LockEntity::nfc_ctx;
-#endif
 #ifdef USE_HOMEKEY
 int LockEntity::nfcAccess_write(hap_write_data_t write_data[], int count,
                                 void *serv_priv, void *write_priv) {
@@ -53,15 +45,14 @@ int LockEntity::nfcAccess_write(hap_write_data_t write_data[], int count,
       HK_HomeKit ctx(parent->readerData, parent->savedHKdata, "READERDATA",
                      tlv_rx_data);
       auto result = ctx.processResult();
-      parent->tlv8_data.resize(result.size());
-      memcpy(parent->tlv8_data.data(), result.data(), result.size());
+      memcpy(parent->tlv8_data, result.data(), result.size());
       // if (strlen((const char*)readerData.reader_group_id) > 0) {
       //   memcpy(ecpData + 8, readerData.reader_group_id,
       //   sizeof(readerData.reader_group_id)); with_crc16(ecpData, 16, ecpData
       //   + 16);
       // }
       hap_val_t new_val;
-      new_val.t.buf = parent->tlv8_data.data();
+      new_val.t.buf = parent->tlv8_data;
       new_val.t.buflen = result.size();
       hap_char_update_val(write->hc, &new_val);
       *(write->status) = HAP_STATUS_SUCCESS;
@@ -149,32 +140,26 @@ void LockEntity::on_lock_update(lock::Lock *obj) {
            lock_state_to_string(obj->state));
   hap_acc_t *acc = hap_acc_get_by_aid(
       hap_get_unique_aid(std::to_string(obj->get_object_id_hash()).c_str()));
-  hap_serv_t *hs = hap_acc_get_serv_by_uuid(acc, HAP_SERV_UUID_GARAGE_DOOR_OPENER);
+  hap_serv_t *hs = hap_acc_get_serv_by_uuid(acc, HAP_SERV_UUID_LOCK_MECHANISM);
   hap_char_t *current_state =
-  hap_serv_get_char_by_uuid(hs, "0000000E-0000-1000-8000-0026BB765291");
+      hap_serv_get_char_by_uuid(hs, HAP_CHAR_UUID_LOCK_CURRENT_STATE);
   hap_char_t *target_state =
-  hap_serv_get_char_by_uuid(hs, "00000032-0000-1000-8000-0026BB765291");
+      hap_serv_get_char_by_uuid(hs, HAP_CHAR_UUID_LOCK_TARGET_STATE);
   hap_val_t c;
   hap_val_t t;
-  
-  // Map LockCurrentState: Unsecured=0, Secured=1, Jammed=2, Unknown=3
-  // Map LockTargetState: Unsecured=0, Secured=1
-  
   if (obj->state == lock::LockState::LOCK_STATE_LOCKED ||
       obj->state == lock::LockState::LOCK_STATE_UNLOCKED) {
-    // Explicit state mapping instead of modulo
-    c.i = (obj->state == lock::LockState::LOCK_STATE_LOCKED) ? 1 : 0;  // Secured : Unsecured
-    t.i = (obj->state == lock::LockState::LOCK_STATE_LOCKED) ? 1 : 0;  // Secured : Unsecured
-    if (current_state) hap_char_update_val(current_state, &c);
-    if (target_state) hap_char_update_val(target_state, &t);
+    c.i = obj->state % 2;
+    t.i = obj->state % 2;
+    hap_char_update_val(current_state, &c);
+    hap_char_update_val(target_state, &t);
   } else if (obj->state == lock::LockState::LOCK_STATE_LOCKING ||
              obj->state == lock::LockState::LOCK_STATE_UNLOCKING) {
-    // Target state for transitioning states
-    t.i = (obj->state == lock::LockState::LOCK_STATE_LOCKING) ? 1 : 0;  // Secured : Unsecured
-    if (target_state) hap_char_update_val(target_state, &t);
+    t.i = (obj->state % 5) % 3;
+    hap_char_update_val(target_state, &t);
   } else if (obj->state == lock::LockState::LOCK_STATE_JAMMED) {
-    c.i = 2;  // Jammed
-    if (current_state) hap_char_update_val(current_state, &c);
+    c.i = obj->state;
+    hap_char_update_val(current_state, &c);
   }
   return;
 }
@@ -189,12 +174,12 @@ int LockEntity::lock_write(hap_write_data_t write_data[], int count,
   hap_write_data_t *write;
   for (i = 0; i < count; i++) {
     write = &write_data[i];
-  if (!strcmp(hap_char_get_type_uuid(write->hc),
-        "00000032-0000-1000-8000-0026BB765291")) {
+    if (!strcmp(hap_char_get_type_uuid(write->hc),
+                HAP_CHAR_UUID_LOCK_TARGET_STATE)) {
       ESP_LOGD("lock_write", "Target State req: %d", write->val.i);
       hap_char_update_val(write->hc, &(write->val));
-    hap_char_t *c = hap_serv_get_char_by_uuid(
-      hap_char_get_parent(write->hc), "0000000E-0000-1000-8000-0026BB765291");
+      hap_char_t *c = hap_serv_get_char_by_uuid(
+          hap_char_get_parent(write->hc), HAP_CHAR_UUID_LOCK_CURRENT_STATE);
       ESP_LOGD("lock_write", "Current State: %d", hap_char_get_val(c)->i);
       hap_char_update_val(c, &(write->val));
       write->val.i ? lockPtr->lock() : lockPtr->unlock();
@@ -274,7 +259,6 @@ LockEntity::LockEntity(lock::Lock *lockPtr)
   with_crc16(ecpData.data(), 16, ecpData.data() + 16);
 #endif
 }
-#ifdef USE_HOMEKEY
 std::string intToFinishString(HKFinish d) {
   switch (d) {
   case TAN:
@@ -294,7 +278,6 @@ std::string intToFinishString(HKFinish d) {
     break;
   }
 }
-#endif
 std::string hex_representation(const std::vector<uint8_t> &v) {
   std::string hex_tmp;
   for (auto x : v) {
@@ -374,16 +357,12 @@ void LockEntity::set_nfc_ctx(pn532::PN532 *ctx) {
 #endif
 
 void LockEntity::setup() {
-  hap_tlv8_val_t* hw_finish_ptr = nullptr;
-  #ifdef USE_HOMEKEY
-  hw_finish_ptr = hkFinishTlvData ? hkFinishTlvData.get() : nullptr;
-  #endif
   hap_acc_cfg_t acc_cfg = {
       .model = strdup(accessory_info[MODEL]),
       .manufacturer = strdup(accessory_info[MANUFACTURER]),
       .fw_rev = strdup(accessory_info[FW_REV]),
       .hw_rev = NULL,
-      .hw_finish = hw_finish_ptr,
+      .hw_finish = hkFinishTlvData.get(),
       .pv = strdup("1.1.0"),
       .cid = HAP_CID_BRIDGE,
       .identify_routine = acc_identify,
