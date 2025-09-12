@@ -1,6 +1,6 @@
 # HAP Garage Door Example
 
-This example demonstrates how to set up a garage door using ESPHome cover component. HomeKit cover integration will be available once cover support is added to the upstream HAP-ESPHome repository.
+This example demonstrates how to set up a garage door using ESPHome cover component with full HomeKit integration.
 
 ```yaml
 esphome:
@@ -17,14 +17,15 @@ esp32:
   board: esp32dev
   framework:
     type: esp-idf
+    version: 5.3.1
+    platform_version: 6.8.1
 
 external_components:
   source: github://rednblkx/HAP-ESPHome@main
   refresh: 0s
 
-# Future HomeKit base configuration (uncomment when cover support is added)
-# homekit_base:
-#   setup_code: '159-35-728'
+homekit_base:
+  setup_code: '159-35-728'
 
 # Example relay outputs for controlling garage door motor
 output:
@@ -92,16 +93,16 @@ cover:
       - output.turn_off: garage_open_relay
       - output.turn_off: garage_close_relay
 
-# Future HomeKit cover configuration (uncomment when cover support is added)
-# homekit:
-#   cover:
-#     - id: garage_door
-#       meta:
-#         name: "Main Garage Door"
-#         manufacturer: "ESPHome"
-#         model: "Smart Garage Controller"
-#         serial_number: "GD123456"
-#         fw_rev: "1.0.0"
+# HomeKit integration
+homekit:
+  cover:
+    - id: garage_door
+      meta:
+        name: "Main Garage Door"
+        manufacturer: "ESPHome"
+        model: "Smart Garage Controller"
+        serial_number: "GD123456"
+        fw_rev: "1.0.0"
 
 logger:
   level: DEBUG
@@ -109,11 +110,12 @@ logger:
 
 ## Features
 
-- Standard ESPHome garage door control (ready for HomeKit when upstream support is added)
+- Full HomeKit garage door opener integration
 - Template cover configured as garage door
 - GPIO relay control for opening/closing
 - Position sensors for detecting door state  
 - Logger debugging support
+- Obstruction detection support
 
 ## Hardware Requirements
 
@@ -130,13 +132,30 @@ logger:
 | garage_close_sensor = ON | COVER_CLOSED |
 | Both sensors = OFF | Unknown/Intermediate |
 
-## Future HomeKit Integration
+## HomeKit Integration
 
-This configuration is ready for HomeKit integration once cover support is added to the upstream HAP-ESPHome repository. The commented HomeKit configuration sections can be uncommented when support becomes available.
+This configuration provides full HomeKit integration for garage door control. The garage door will appear in the Apple Home app as a "Garage Door Opener" with the following features:
 
-The planned HomeKit integration will provide:
-- Garage Door Opener service in Apple Home app
-- Proper state synchronization between ESPHome and HomeKit
-- Support for Open/Close commands from HomeKit
+- **Open/Close Control**: Tap to open or close the garage door from the Home app
+- **Current State Display**: Shows whether the door is open, closed, opening, closing, or stopped
+- **Obstruction Detection**: Automatically detects if the door stops in an intermediate position
+- **Proper State Synchronization**: Changes made via HomeKit are reflected in ESPHome and vice versa
 
-**Note:** This example currently uses the upstream `rednblkx/HAP-ESPHome` repository which does not yet include cover support for HomeKit integration.
+### HomeKit States Mapping
+
+The integration maps ESPHome cover states to HomeKit garage door states as follows:
+
+| ESPHome State | HomeKit State | Description |
+|---------------|---------------|-------------|
+| COVER_OPERATION_IDLE + position ≥ 98% | Open (0) | Door is fully open |
+| COVER_OPERATION_IDLE + position ≤ 2% | Closed (1) | Door is fully closed |
+| COVER_OPERATION_IDLE + intermediate position | Stopped (4) | Door stopped mid-way (potential obstruction) |
+| COVER_OPERATION_OPENING | Opening (2) | Door is currently opening |
+| COVER_OPERATION_CLOSING | Closing (3) | Door is currently closing |
+
+### Setup in Apple Home App
+
+1. After flashing the configuration, the device will appear as discoverable in HomeKit
+2. Use the setup code `159-35-728` (or scan the QR code if displayed)
+3. The garage door will appear as "Main Garage Door" (or the name you specified)
+4. You can control it via the Home app, Siri, or automation scenes

@@ -76,8 +76,22 @@ switch:
     turn_off_action:
       - light.turn_off: test_light
 
+cover:
+  - platform: template
+    name: "Test Garage Door"
+    id: test_garage_door
+    device_class: garage
+    optimistic: true
+    assumed_state: false
+    open_action:
+      - logger.log: "Opening test garage door"
+    close_action:
+      - logger.log: "Closing test garage door"
+    stop_action:
+      - logger.log: "Stopping test garage door"
+
 external_components:
-  source: github://rednblkx/HAP-ESPHome@main
+  source: components
   refresh: 0s
 
 spi:
@@ -149,12 +163,14 @@ homekit:
         fw_rev: "0.16.2"
   sensor:
     - id: my_sensor
+      temp_units: CELSIUS
       meta:
         manufacturer: "AMICI&CO"
         model: "VARIO"
         serial_number: "42424242"
         fw_rev: "0.16.2"
     - id: my_sensor_second
+      temp_units: CELSIUS
       meta:
         manufacturer: "AMICI&CO"
         model: "VARIO"
@@ -165,6 +181,13 @@ homekit:
       meta:
         manufacturer: "AMICI&CO"
         model: "TRANSMUTO"
+        serial_number: "42424242"
+        fw_rev: "0.16.2"
+  cover:
+    - id: test_garage_door
+      meta:
+        manufacturer: "AMICI&CO"
+        model: "PORTA"
         serial_number: "42424242"
         fw_rev: "0.16.2"
 

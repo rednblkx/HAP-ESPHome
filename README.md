@@ -31,6 +31,7 @@ See [Components](#3-components) for documentation.
 | Sensor        | Temperature, Humidity, Illuminance, Air Quality, CO2, CO, PM10, PM2.5| `device_class` property has to be declared with the sensor type as per HASS [docs](https://www.home-assistant.io/integrations/sensor/#device-class) |
 | Binary Sensor | Motion, Occupancy, Contact, Smoke, Gas detection                     | `device_class` property determines HomeKit service type (motion, occupancy, door/window/opening → contact, smoke, gas → CO)                       |
 | Fan           | On/Off                                                                |                                                                                                                                                     |
+| Cover         | Garage Door Opener with Open/Close/Stop, obstruction detection       | Supports position-based state detection and HomeKit garage door service                                                                            |
 
 ## 2. Prerequisites
 

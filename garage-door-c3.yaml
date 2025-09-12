@@ -1,0 +1,109 @@
+esphome:
+  name: garage-door-controller
+  platformio_options:
+    board_build.flash_mode: dio
+
+wifi:
+  ssid: !secret wifi_ssid
+  password: !secret wifi_password
+
+api:
+  reboot_timeout: 0s
+
+esp32:
+  board: esp32-c3-devkitm-1
+  framework:
+    type: esp-idf
+    version: 5.3.1
+    platform_version: 6.8.1
+    sdkconfig_options:
+      CONFIG_COMPILER_OPTIMIZATION_SIZE: y
+      CONFIG_LWIP_MAX_SOCKETS: "16"
+      CONFIG_MBEDTLS_HKDF_C: y
+
+external_components:
+  source: components
+  refresh: 0s
+
+homekit_base:
+  setup_code: '159-35-728'
+
+# Relay outputs for controlling garage door motor
+output:
+  - platform: gpio
+    pin: GPIO3
+    id: garage_open_relay
+    
+  - platform: gpio
+    pin: GPIO4
+    id: garage_close_relay
+
+# Sensors for detecting garage door position
+binary_sensor:
+  - platform: gpio
+    pin: 
+      number: GPIO5
+      mode: INPUT_PULLUP
+      inverted: true
+    id: garage_open_sensor
+    name: "Garage Door Open Sensor"
+    
+  - platform: gpio
+    pin: 
+      number: GPIO6
+      mode: INPUT_PULLUP
+      inverted: true
+    id: garage_close_sensor
+    name: "Garage Door Close Sensor"
+
+# Template cover for garage door control
+cover:
+  - platform: template
+    name: "Main Garage Door"
+    id: main_garage_door
+    device_class: garage
+    optimistic: false
+    assumed_state: false
+    
+    # Current position based on sensors
+    lambda: |-
+      if (id(garage_open_sensor).state) {
+        return COVER_OPEN;
+      } else if (id(garage_close_sensor).state) {
+        return COVER_CLOSED;
+      } else {
+        return {};  // Unknown state
+      }
+    
+    open_action:
+      - logger.log: "Opening garage door"
+      - output.turn_off: garage_close_relay
+      - output.turn_on: garage_open_relay
+      - delay: 1s
+      - output.turn_off: garage_open_relay
+      
+    close_action:
+      - logger.log: "Closing garage door"
+      - output.turn_off: garage_open_relay
+      - output.turn_on: garage_close_relay
+      - delay: 1s
+      - output.turn_off: garage_close_relay
+      
+    stop_action:
+      - logger.log: "Stopping garage door"
+      - output.turn_off: garage_open_relay
+      - output.turn_off: garage_close_relay
+
+# HomeKit integration
+homekit:
+  cover:
+    - id: main_garage_door
+      meta:
+        name: "Main Garage Door"
+        manufacturer: "ESPHome"
+        model: "Smart Garage Controller"
+        serial_number: "GD123456"
+        fw_rev: "1.0.0"
+
+logger:
+  level: DEBUG
