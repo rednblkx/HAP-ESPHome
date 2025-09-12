@@ -25,7 +25,7 @@ namespace esphome
     private:
       static constexpr const char* TAG = "LockEntity";
       lock::Lock* ptrToLock;
-      static nvs_handle savedHKdata;
+      static nvs_handle_t savedHKdata;
       static readerData_t readerData;
       uint8_t tlv8_data[128];
       #ifdef USE_HOMEKEY

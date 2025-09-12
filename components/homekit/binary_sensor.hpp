@@ -22,34 +22,34 @@ namespace esphome
       // Helper function to resolve device class mapping
       static inline void resolve_service_mapping(const std::string& device_class, const char*& service_uuid, const char*& char_uuid) {
         if (device_class == "motion") {
-          service_uuid = HAP_SERV_UUID_MOTION_SENSOR;
-          char_uuid = HAP_CHAR_UUID_MOTION_DETECTED;
+          service_uuid = static_cast<const char*>(HAP_SERV_UUID_MOTION_SENSOR);
+          char_uuid = static_cast<const char*>(HAP_CHAR_UUID_MOTION_DETECTED);
         }
         else if (device_class == "occupancy") {
-          service_uuid = HAP_SERV_UUID_OCCUPANCY_SENSOR;
-          char_uuid = HAP_CHAR_UUID_OCCUPANCY_DETECTED;
+          service_uuid = static_cast<const char*>(HAP_SERV_UUID_OCCUPANCY_SENSOR);
+          char_uuid = static_cast<const char*>(HAP_CHAR_UUID_OCCUPANCY_DETECTED);
         }
         else if (device_class == "door" || device_class == "window" || device_class == "opening" || 
                  device_class == "garage_door" || device_class == "vibration" || device_class == "tamper") {
-          service_uuid = HAP_SERV_UUID_CONTACT_SENSOR;
-          char_uuid = HAP_CHAR_UUID_CONTACT_SENSOR_STATE;
+          service_uuid = static_cast<const char*>(HAP_SERV_UUID_CONTACT_SENSOR);
+          char_uuid = static_cast<const char*>(HAP_CHAR_UUID_CONTACT_SENSOR_STATE);
         }
         else if (device_class == "smoke") {
-          service_uuid = HAP_SERV_UUID_SMOKE_SENSOR;
-          char_uuid = HAP_CHAR_UUID_SMOKE_DETECTED;
+          service_uuid = static_cast<const char*>(HAP_SERV_UUID_SMOKE_SENSOR);
+          char_uuid = static_cast<const char*>(HAP_CHAR_UUID_SMOKE_DETECTED);
         }
         else if (device_class == "gas") {
-          service_uuid = HAP_SERV_UUID_CARBON_MONOXIDE_SENSOR;
-          char_uuid = HAP_CHAR_UUID_CARBON_MONOXIDE_DETECTED;
+          service_uuid = static_cast<const char*>(HAP_SERV_UUID_CARBON_MONOXIDE_SENSOR);
+          char_uuid = static_cast<const char*>(HAP_CHAR_UUID_CARBON_MONOXIDE_DETECTED);
         }
         else if (device_class == "moisture" || device_class == "water") {
-          service_uuid = HAP_SERV_UUID_LEAK_SENSOR;
-          char_uuid = HAP_CHAR_UUID_LEAK_DETECTED;
+          service_uuid = static_cast<const char*>(HAP_SERV_UUID_LEAK_SENSOR);
+          char_uuid = static_cast<const char*>(HAP_CHAR_UUID_LEAK_DETECTED);
         }
         else {
           // Default to contact sensor for unknown device classes
-          service_uuid = HAP_SERV_UUID_CONTACT_SENSOR;
-          char_uuid = HAP_CHAR_UUID_CONTACT_SENSOR_STATE;
+          service_uuid = static_cast<const char*>(HAP_SERV_UUID_CONTACT_SENSOR);
+          char_uuid = static_cast<const char*>(HAP_CHAR_UUID_CONTACT_SENSOR_STATE);
         }
       }
       

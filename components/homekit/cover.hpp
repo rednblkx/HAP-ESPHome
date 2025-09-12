@@ -36,10 +36,10 @@ namespace esphome
               ESP_LOGD(TAG, "Received Write for garage door '%s' -> %s", coverPtr->get_name().c_str(), write->val.i == 0 ? "Open" : "Close");
               if (write->val.i == 0) {
                 // Open
-                coverPtr->open();
+                coverPtr->make_call().set_command_open().perform();
               } else {
                 // Close  
-                coverPtr->close();
+                coverPtr->make_call().set_command_close().perform();
               }
               hap_char_update_val(write->hc, &(write->val));
               *(write->status) = HAP_STATUS_SUCCESS;
@@ -48,7 +48,7 @@ namespace esphome
           else if (!strcmp(hap_char_get_type_uuid(write->hc), HAP_CHAR_UUID_CURRENT_DOOR_STATE) ||
                    !strcmp(hap_char_get_type_uuid(write->hc), HAP_CHAR_UUID_OBSTRUCTION_DETECTED)) {
             // These are read-only characteristics
-            *(write->status) = HAP_STATUS_RES_READ_ONLY;
+            *(write->status) = HAP_STATUS_WR_ON_RDONLY;
           }
           else {
             *(write->status) = HAP_STATUS_RES_ABSENT;
@@ -72,7 +72,10 @@ namespace esphome
               hap_val_t c, t, obstruction;
               
               // Read current target_state value to preserve it when stopped
-              hap_char_get_val(target_state, &t);
+              if (hap_char_get_val(target_state, &t) != HAP_SUCCESS) {
+                // Set default if unable to read current value
+                t.i = 1; // Default to closed
+              }
               
               // Initialize obstruction as false by default
               obstruction.b = false;

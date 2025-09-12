@@ -12,7 +12,7 @@ namespace esphome {
 namespace homekit {
 #ifdef USE_HOMEKEY
 readerData_t LockEntity::readerData;
-nvs_handle LockEntity::savedHKdata;
+nvs_handle_t LockEntity::savedHKdata;
 pn532::PN532 *LockEntity::nfc_ctx;
 #endif
 #ifdef USE_HOMEKEY
