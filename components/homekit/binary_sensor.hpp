@@ -15,61 +15,73 @@ namespace esphome
     class BinarySensorEntity : public HAPEntity
     {
     private:
-      static constexpr const char* TAG = "BinarySensorEntity";
+      static inline const char* TAG = "BinarySensorEntity";
       binary_sensor::BinarySensor* binarySensorPtr;
+      uint32_t aid_ = 0;
+      
+      // Helper function to resolve device class mapping
+      static inline void resolve_service_mapping(const std::string& device_class, const char*& service_uuid, const char*& char_uuid) {
+        if (device_class == "motion") {
+          service_uuid = HAP_SERV_UUID_MOTION_SENSOR;
+          char_uuid = HAP_CHAR_UUID_MOTION_DETECTED;
+        }
+        else if (device_class == "occupancy") {
+          service_uuid = HAP_SERV_UUID_OCCUPANCY_SENSOR;
+          char_uuid = HAP_CHAR_UUID_OCCUPANCY_DETECTED;
+        }
+        else if (device_class == "door" || device_class == "window" || device_class == "opening" || 
+                 device_class == "garage_door" || device_class == "vibration" || device_class == "tamper") {
+          service_uuid = HAP_SERV_UUID_CONTACT_SENSOR;
+          char_uuid = HAP_CHAR_UUID_CONTACT_SENSOR_STATE;
+        }
+        else if (device_class == "smoke") {
+          service_uuid = HAP_SERV_UUID_SMOKE_SENSOR;
+          char_uuid = HAP_CHAR_UUID_SMOKE_DETECTED;
+        }
+        else if (device_class == "gas") {
+          service_uuid = HAP_SERV_UUID_CARBON_MONOXIDE_SENSOR;
+          char_uuid = HAP_CHAR_UUID_CARBON_MONOXIDE_DETECTED;
+        }
+        else if (device_class == "moisture" || device_class == "water") {
+          service_uuid = HAP_SERV_UUID_LEAK_SENSOR;
+          char_uuid = HAP_CHAR_UUID_LEAK_DETECTED;
+        }
+        else {
+          // Default to contact sensor for unknown device classes
+          service_uuid = HAP_SERV_UUID_CONTACT_SENSOR;
+          char_uuid = HAP_CHAR_UUID_CONTACT_SENSOR_STATE;
+        }
+      }
       
       static void on_binary_sensor_update(binary_sensor::BinarySensor* obj, bool v) {
         ESP_LOGD(TAG, "%s state: %d", obj->get_name().c_str(), v);
+        
+        // Use cached AID - get from object hash directly since we can't access instance from static callback
         hap_acc_t* acc = hap_acc_get_by_aid(hap_get_unique_aid(std::to_string(obj->get_object_id_hash()).c_str()));
         if (acc) {
           hap_serv_t* hs = nullptr;
           hap_char_t* state_char = nullptr;
           
-          // Find the service and characteristic based on device class
+          // Find the service and characteristic based on device class using helper
           const std::string device_class = obj->get_device_class();
+          const char* service_uuid;
+          const char* char_uuid;
+          resolve_service_mapping(device_class, service_uuid, char_uuid);
           
-          if (device_class == "motion") {
-            hs = hap_acc_get_serv_by_uuid(acc, HAP_SERV_UUID_MOTION_SENSOR);
-            if (hs) {
-              state_char = hap_serv_get_char_by_uuid(hs, HAP_CHAR_UUID_MOTION_DETECTED);
-            }
-          }
-          else if (device_class == "occupancy") {
-            hs = hap_acc_get_serv_by_uuid(acc, HAP_SERV_UUID_OCCUPANCY_SENSOR);
-            if (hs) {
-              state_char = hap_serv_get_char_by_uuid(hs, HAP_CHAR_UUID_OCCUPANCY_DETECTED);
-            }
-          }
-          else if (device_class == "door" || device_class == "window" || device_class == "opening" || 
-                   device_class == "garage_door" || device_class == "vibration" || device_class == "tamper") {
-            hs = hap_acc_get_serv_by_uuid(acc, HAP_SERV_UUID_CONTACT_SENSOR);
-            if (hs) {
-              state_char = hap_serv_get_char_by_uuid(hs, HAP_CHAR_UUID_CONTACT_SENSOR_STATE);
-            }
-          }
-          else if (device_class == "smoke") {
-            hs = hap_acc_get_serv_by_uuid(acc, HAP_SERV_UUID_SMOKE_SENSOR);
-            if (hs) {
-              state_char = hap_serv_get_char_by_uuid(hs, HAP_CHAR_UUID_SMOKE_DETECTED);
-            }
-          }
-          else if (device_class == "gas") {
-            hs = hap_acc_get_serv_by_uuid(acc, HAP_SERV_UUID_CARBON_MONOXIDE_SENSOR);
-            if (hs) {
-              state_char = hap_serv_get_char_by_uuid(hs, HAP_CHAR_UUID_CARBON_MONOXIDE_DETECTED);
-            }
-          }
-          else {
-            // Default to contact sensor for unknown device classes
-            hs = hap_acc_get_serv_by_uuid(acc, HAP_SERV_UUID_CONTACT_SENSOR);
-            if (hs) {
-              state_char = hap_serv_get_char_by_uuid(hs, HAP_CHAR_UUID_CONTACT_SENSOR_STATE);
-            }
+          hs = hap_acc_get_serv_by_uuid(acc, service_uuid);
+          if (hs) {
+            state_char = hap_serv_get_char_by_uuid(hs, char_uuid);
           }
           
           if (state_char) {
             hap_val_t state;
-            state.b = v;
+            // Use correct HAP value type for ContactSensorState (u8)
+            if (device_class == "door" || device_class == "window" || device_class == "opening" ||
+                device_class == "garage_door" || device_class == "vibration" || device_class == "tamper") {
+              state.u = v ? 1 : 0; // CONTACT_NOT_DETECTED(1) / CONTACT_DETECTED(0)
+            } else {
+              state.b = v;
+            }
             hap_char_update_val(state_char, &state);
             ESP_LOGD(TAG, "Binary sensor '%s' (%s) state updated to: %s", obj->get_name().c_str(), device_class.c_str(), v ? "true" : "false");
           } else {
@@ -85,6 +97,7 @@ namespace esphome
           hap_val_t sensorValue;
           sensorValue.b = binarySensorPtr->state;
           hap_char_update_val(hc, &sensorValue);
+          if (status_code) *status_code = HAP_STATUS_SUCCESS;
           return HAP_SUCCESS;
         }
         return HAP_FAIL;
@@ -130,8 +143,11 @@ namespace esphome
         accessory = hap_acc_create(&acc_cfg);
         
         /* Create the appropriate service based on device class */
+        const char* service_uuid;
+        const char* char_uuid;
+        resolve_service_mapping(device_class, service_uuid, char_uuid);
+        
         if (device_class == "motion") {
-          // Try specific motion sensor creation first, fallback to generic service creation
           service = hap_serv_create(HAP_SERV_UUID_MOTION_SENSOR);
           if (service) {
             hap_serv_add_char(service, hap_char_motion_detected_create(binarySensorPtr->state));
@@ -167,6 +183,13 @@ namespace esphome
             ESP_LOGI(TAG, "Created carbon monoxide sensor service for '%s'", accessory_name.c_str());
           }
         }
+        else if (device_class == "moisture" || device_class == "water") {
+          service = hap_serv_create(HAP_SERV_UUID_LEAK_SENSOR);
+          if (service) {
+            hap_serv_add_char(service, hap_char_leak_detected_create(binarySensorPtr->state));
+            ESP_LOGI(TAG, "Created leak sensor service for '%s'", accessory_name.c_str());
+          }
+        }
         
         if (!service) {
           // Default to contact sensor for unknown device classes
@@ -192,7 +215,8 @@ namespace esphome
         hap_acc_add_serv(accessory, service);
 
         /* Add the Accessory to the HomeKit Database */
-        hap_add_bridged_accessory(accessory, hap_get_unique_aid(std::to_string(binarySensorPtr->get_object_id_hash()).c_str()));
+        aid_ = hap_get_unique_aid(std::to_string(binarySensorPtr->get_object_id_hash()).c_str());
+        hap_add_bridged_accessory(accessory, aid_);
         
         if (!binarySensorPtr->is_internal())
           binarySensorPtr->add_on_state_callback([this](bool v) { BinarySensorEntity::on_binary_sensor_update(binarySensorPtr, v); });

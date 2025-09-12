@@ -156,18 +156,18 @@ async def to_code(config):
                     info_temp.append([ACC_INFO[m], l["meta"][m]])
                 cg.add(climate_entity.setInfo(info_temp))
     if "cover" in config:
-        for l in config["cover"]:
-            cover_entity = cg.Pvariable(ID(f"{l['id'].id}_hk_cover_entity", type=CoverEntity), var.add_cover(await cg.get_variable(l['id'])))
-            if "meta" in l:
+        for entry in config["cover"]:
+            cover_entity = cg.Pvariable(ID(f"{entry['id'].id}_hk_cover_entity", type=CoverEntity), var.add_cover(await cg.get_variable(entry['id'])))
+            if "meta" in entry:
                 info_temp = []
-                for m in l["meta"]:
-                    info_temp.append([ACC_INFO[m], l["meta"][m]])
+                for m in entry["meta"]:
+                    info_temp.append([ACC_INFO[m], entry["meta"][m]])
                 cg.add(cover_entity.setInfo(info_temp))
     if "binary_sensor" in config:
-        for l in config["binary_sensor"]:
-            binary_sensor_entity = cg.Pvariable(ID(f"{l['id'].id}_hk_binary_sensor_entity", type=BinarySensorEntity), var.add_binary_sensor(await cg.get_variable(l['id'])))
-            if "meta" in l:
+        for entry in config["binary_sensor"]:
+            binary_sensor_entity = cg.Pvariable(ID(f"{entry['id'].id}_hk_binary_sensor_entity", type=BinarySensorEntity), var.add_binary_sensor(await cg.get_variable(entry['id'])))
+            if "meta" in entry:
                 info_temp = []
-                for m in l["meta"]:
-                    info_temp.append([ACC_INFO[m], l["meta"][m]])
+                for m in entry["meta"]:
+                    info_temp.append([ACC_INFO[m], entry["meta"][m]])
                 cg.add(binary_sensor_entity.setInfo(info_temp))
