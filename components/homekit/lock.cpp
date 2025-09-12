@@ -12,7 +12,7 @@ namespace esphome {
 namespace homekit {
 #ifdef USE_HOMEKEY
 readerData_t LockEntity::readerData;
-nvs_handle LockEntity::savedHKdata;
+nvs_handle_t LockEntity::savedHKdata;
 pn532::PN532 *LockEntity::nfc_ctx;
 #endif
 #ifdef USE_HOMEKEY
@@ -53,14 +53,15 @@ int LockEntity::nfcAccess_write(hap_write_data_t write_data[], int count,
       HK_HomeKit ctx(parent->readerData, parent->savedHKdata, "READERDATA",
                      tlv_rx_data);
       auto result = ctx.processResult();
-      memcpy(parent->tlv8_data, result.data(), result.size());
+      parent->tlv8_data.resize(result.size());
+      memcpy(parent->tlv8_data.data(), result.data(), result.size());
       // if (strlen((const char*)readerData.reader_group_id) > 0) {
       //   memcpy(ecpData + 8, readerData.reader_group_id,
       //   sizeof(readerData.reader_group_id)); with_crc16(ecpData, 16, ecpData
       //   + 16);
       // }
       hap_val_t new_val;
-      new_val.t.buf = parent->tlv8_data;
+      new_val.t.buf = parent->tlv8_data.data();
       new_val.t.buflen = result.size();
       hap_char_update_val(write->hc, &new_val);
       *(write->status) = HAP_STATUS_SUCCESS;
@@ -155,19 +156,25 @@ void LockEntity::on_lock_update(lock::Lock *obj) {
   hap_serv_get_char_by_uuid(hs, "00000032-0000-1000-8000-0026BB765291");
   hap_val_t c;
   hap_val_t t;
+  
+  // Map LockCurrentState: Unsecured=0, Secured=1, Jammed=2, Unknown=3
+  // Map LockTargetState: Unsecured=0, Secured=1
+  
   if (obj->state == lock::LockState::LOCK_STATE_LOCKED ||
       obj->state == lock::LockState::LOCK_STATE_UNLOCKED) {
-    c.i = obj->state % 2;
-    t.i = obj->state % 2;
-    hap_char_update_val(current_state, &c);
-    hap_char_update_val(target_state, &t);
+    // Explicit state mapping instead of modulo
+    c.i = (obj->state == lock::LockState::LOCK_STATE_LOCKED) ? 1 : 0;  // Secured : Unsecured
+    t.i = (obj->state == lock::LockState::LOCK_STATE_LOCKED) ? 1 : 0;  // Secured : Unsecured
+    if (current_state) hap_char_update_val(current_state, &c);
+    if (target_state) hap_char_update_val(target_state, &t);
   } else if (obj->state == lock::LockState::LOCK_STATE_LOCKING ||
              obj->state == lock::LockState::LOCK_STATE_UNLOCKING) {
-    t.i = (obj->state % 5) % 3;
-    hap_char_update_val(target_state, &t);
+    // Target state for transitioning states
+    t.i = (obj->state == lock::LockState::LOCK_STATE_LOCKING) ? 1 : 0;  // Secured : Unsecured
+    if (target_state) hap_char_update_val(target_state, &t);
   } else if (obj->state == lock::LockState::LOCK_STATE_JAMMED) {
-    c.i = obj->state;
-    hap_char_update_val(current_state, &c);
+    c.i = 2;  // Jammed
+    if (current_state) hap_char_update_val(current_state, &c);
   }
   return;
 }
@@ -267,6 +274,7 @@ LockEntity::LockEntity(lock::Lock *lockPtr)
   with_crc16(ecpData.data(), 16, ecpData.data() + 16);
 #endif
 }
+#ifdef USE_HOMEKEY
 std::string intToFinishString(HKFinish d) {
   switch (d) {
   case TAN:
@@ -286,11 +294,12 @@ std::string intToFinishString(HKFinish d) {
     break;
   }
 }
+#endif
 std::string hex_representation(const std::vector<uint8_t> &v) {
   std::string hex_tmp;
   for (auto x : v) {
-  std::ostringstream oss;
-  oss << std::hex << std::setw(2) << std::setfill('0') << (unsigned)x;
+    std::ostringstream oss;
+    oss << std::hex << std::setw(2) << std::setfill('0') << (unsigned)x;
     hex_tmp += oss.str();
   }
   return hex_tmp;
@@ -365,12 +374,16 @@ void LockEntity::set_nfc_ctx(pn532::PN532 *ctx) {
 #endif
 
 void LockEntity::setup() {
+  hap_tlv8_val_t* hw_finish_ptr = nullptr;
+  #ifdef USE_HOMEKEY
+  hw_finish_ptr = hkFinishTlvData ? hkFinishTlvData.get() : nullptr;
+  #endif
   hap_acc_cfg_t acc_cfg = {
       .model = strdup(accessory_info[MODEL]),
       .manufacturer = strdup(accessory_info[MANUFACTURER]),
       .fw_rev = strdup(accessory_info[FW_REV]),
       .hw_rev = NULL,
-      .hw_finish = hkFinishTlvData.get(),
+      .hw_finish = hw_finish_ptr,
       .pv = strdup("1.1.0"),
       .cid = HAP_CID_BRIDGE,
       .identify_routine = acc_identify,
