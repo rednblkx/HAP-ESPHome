@@ -4,6 +4,10 @@
 #include <esphome/core/defines.h>
 #include <esphome/core/component.h>
 #include "const.h"
+#ifdef USE_HOMEKEY
+#include <nvs.h> // For nvs_handle
+#include "../pn532/pn532.h" // For pn532::PN532
+#endif
 #ifdef USE_LIGHT
 #include "light.hpp"
 #endif
@@ -24,9 +28,6 @@
 #endif
 #ifdef USE_COVER
 #include "cover.hpp"
-#endif
-#ifdef USE_BINARY_SENSOR
-#include "binary_sensor.hpp"
 #endif
 namespace esphome
 {
@@ -75,10 +76,6 @@ namespace esphome
       #ifdef USE_COVER
       std::vector<CoverEntity*> covers;
       CoverEntity* add_cover(cover::Cover* coverPtr);
-      #endif
-      #ifdef USE_BINARY_SENSOR
-      std::vector<BinarySensorEntity*> binary_sensors;
-      BinarySensorEntity* add_binary_sensor(binary_sensor::BinarySensor* binarySensorPtr);
       #endif
     };
   }

@@ -3,6 +3,8 @@
 #ifdef USE_COVER
 #include <esphome/core/application.h>
 #include <hap.h>
+#include <sstream>
+#include <iomanip>
 #include <hap_apple_servs.h>
 #include <hap_apple_chars.h>
 #include "hap_entity.h"
@@ -36,19 +38,14 @@ namespace esphome
               ESP_LOGD(TAG, "Received Write for garage door '%s' -> %s", coverPtr->get_name().c_str(), write->val.i == 0 ? "Open" : "Close");
               if (write->val.i == 0) {
                 // Open
-                coverPtr->make_call().set_command_open().perform();
+                coverPtr->open();
               } else {
                 // Close  
-                coverPtr->make_call().set_command_close().perform();
+                coverPtr->close();
               }
               hap_char_update_val(write->hc, &(write->val));
               *(write->status) = HAP_STATUS_SUCCESS;
             }
-          }
-          else if (!strcmp(hap_char_get_type_uuid(write->hc), HAP_CHAR_UUID_CURRENT_DOOR_STATE) ||
-                   !strcmp(hap_char_get_type_uuid(write->hc), HAP_CHAR_UUID_OBSTRUCTION_DETECTED)) {
-            // These are read-only characteristics
-            *(write->status) = HAP_STATUS_WR_ON_RDONLY;
           }
           else {
             *(write->status) = HAP_STATUS_RES_ABSENT;
@@ -66,19 +63,12 @@ namespace esphome
           if (hs) {
             hap_char_t* current_state = hap_serv_get_char_by_uuid(hs, HAP_CHAR_UUID_CURRENT_DOOR_STATE); // Current Door State
             hap_char_t* target_state = hap_serv_get_char_by_uuid(hs, HAP_CHAR_UUID_TARGET_DOOR_STATE);  // Target Door State
-            hap_char_t* obstruction_detected = hap_serv_get_char_by_uuid(hs, HAP_CHAR_UUID_OBSTRUCTION_DETECTED); // Obstruction Detected
             
-            if (current_state && target_state && obstruction_detected) {
-              hap_val_t c, t, obstruction;
+            if (current_state && target_state) {
+              hap_val_t c, t;
               
               // Read current target_state value to preserve it when stopped
-              if (hap_char_get_val(target_state, &t) != HAP_SUCCESS) {
-                // Set default if unable to read current value
-                t.i = 1; // Default to closed
-              }
-              
-              // Initialize obstruction as false by default
-              obstruction.b = false;
+              hap_char_get_val(target_state, &t);
               
               // Map ESPHome cover states to HomeKit garage door states
               switch (obj->current_operation) {
@@ -91,10 +81,6 @@ namespace esphome
                     t.i = 1; // Target Closed
                   } else {
                     c.i = 4; // Stopped
-                    // Detect potential obstruction: cover stopped in an intermediate position
-                    // This could indicate an obstruction was encountered
-                    obstruction.b = true;
-                    ESP_LOGD(TAG, "Garage door '%s' stopped at intermediate position (%.2f), potential obstruction detected", obj->get_name().c_str(), obj->position);
                   }
                   break;
                 case cover::COVER_OPERATION_OPENING:
@@ -114,10 +100,6 @@ namespace esphome
               }
               if (hap_char_get_val(target_state, &prev) == HAP_SUCCESS && prev.i != t.i) {
                 hap_char_update_val(target_state, &t);
-              }
-              if (hap_char_get_val(obstruction_detected, &prev) == HAP_SUCCESS && prev.b != obstruction.b) {
-                hap_char_update_val(obstruction_detected, &obstruction);
-                ESP_LOGD(TAG, "Garage door '%s' obstruction status updated to: %s", obj->get_name().c_str(), obstruction.b ? "true" : "false");
               }
             }
           }
@@ -175,20 +157,14 @@ namespace esphome
           target_state = 1;
         }
         
-        // Prefer typed creator if available (guard for older SDKs)
-        #ifdef HAP_SERV_GARAGE_DOOR_OPENER_CREATE
-        service = hap_serv_garage_door_opener_create(current_state, target_state, false /* obstruction_detected */);
-        #else
-        service = nullptr;
-        #endif
-        if (!service) {
-          // Fallback: manual service + typed characteristic creators
-          service = hap_serv_create(HAP_SERV_UUID_GARAGE_DOOR_OPENER);
-          if (service) {
-            hap_serv_add_char(service, hap_char_current_door_state_create(current_state));
-            hap_serv_add_char(service, hap_char_target_door_state_create(target_state));
-            hap_serv_add_char(service, hap_char_obstruction_detected_create(false));
-          }
+        // Try to create garage door service using specific function if available
+        // Otherwise fallback to manual creation
+  service = hap_serv_create(HAP_SERV_UUID_GARAGE_DOOR_OPENER); // Garage Door Opener service
+        if (service) {
+          // Add required characteristics using typed creators
+          hap_serv_add_char(service, hap_char_current_door_state_create(current_state));
+          hap_serv_add_char(service, hap_char_target_door_state_create(target_state));
+          hap_serv_add_char(service, hap_char_obstruction_detected_create(false));
         }
         
         if (!service) {

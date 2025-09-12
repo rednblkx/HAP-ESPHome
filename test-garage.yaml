@@ -1,0 +1,47 @@
+esphome:
+  name: garage-door-test
+
+wifi:
+  ssid: !secret wifi_ssid
+  password: !secret wifi_password
+
+api:
+  reboot_timeout: 0s
+
+esp32:
+  board: esp32dev
+  framework:
+    type: esp-idf
+
+cover:
+  - platform: template
+    id: "garage_door"
+    name: "Garage Door"
+    optimistic: true
+    assumed_state: false
+    open_action:
+      - logger.log: "Opening garage door"
+    close_action:
+      - logger.log: "Closing garage door"
+    stop_action:
+      - logger.log: "Stopping garage door"
+
+external_components:
+  source: components
+  refresh: 0s
+
+homekit_base:
+  setup_code: '159-35-728'
+
+homekit:
+  cover:
+    - id: garage_door
+      meta:
+        name: "Garage Door Opener"
+        manufacturer: "ESPHome"
+        model: "Template Garage Door"
+        serial_number: "12345678"
+        fw_rev: "1.0.0"
+
+logger:
+  level: DEBUG

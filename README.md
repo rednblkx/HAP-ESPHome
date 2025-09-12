@@ -23,14 +23,13 @@ See [Components](#3-components) for documentation.
 
 ### Supported entity types
 
-| Type          | Attributes                                                            | Notes                                                                                                                                               |
-|---------------|-----------------------------------------------------------------------|-----------------------------------------------------------------------------------------------------------------------------------------------------|
-| Light         | On/Off, Brightness, RGB, Color Temperature                           |                                                                                                                                                     |
-| Lock          | Lock/Unlock                                                           | Homekey can be enabled but only the `pn532_spi` component is supported to be used with it                                                         |
-| Switch        | On/Off                                                                |                                                                                                                                                     |
-| Sensor        | Temperature, Humidity, Illuminance, Air Quality, CO2, CO, PM10, PM2.5| `device_class` property has to be declared with the sensor type as per HASS [docs](https://www.home-assistant.io/integrations/sensor/#device-class) |
-| Binary Sensor | Motion, Occupancy, Contact, Smoke, Gas detection                     | `device_class` property determines HomeKit service type (motion, occupancy, door/window/opening → contact, smoke, gas → CO)                       |
-| Fan           | On/Off                                                                |                                                                                                                                                     |
+| Type   | Attributes                                                            | Notes                                                                                                                                               |
+|--------|-----------------------------------------------------------------------|-----------------------------------------------------------------------------------------------------------------------------------------------------|
+| Light  | On/Off, Brightness, RGB, Color Temperature                            |                                                                                                                                                     |
+| Lock   | Lock/Unlock                                                           | Homekey can be enabled but only the `pn532_spi` component is supported to be used with it                                                           |
+| Switch | On/Off                                                                |                                                                                                                                                     |
+| Sensor | Temperature, Humidity, Illuminance, Air Quality, CO2, CO, PM10, PM2.5 | `device_class` property has to be declared with the sensor type as per HASS [docs](https://www.home-assistant.io/integrations/sensor/#device-class) |
+| Fan    | On/Off                                                                |                                                                                                                                                     |
 
 ## 2. Prerequisites
 
@@ -255,49 +254,6 @@ This is what handles the accessory logic like syncing states between HomeKit and
            serial_number: "42424242"
            fw_rev: "0.16.2"
    ```
-
-#### 3.2.7. Binary Sensor
-
-- **binary_sensor** (Optional): Array of Binary Sensor entities
-  - **id** (Required, [Binary Sensor](https://esphome.io/components/binary_sensor/)): Id of the binary sensor entity
-  - **meta** (Optional): Accessory information
-    - **name** (Optional, string): Name of the accessory, defaults to name of the entity
-    - **model** (Optional, string): Model name for the accessory
-    - **manufacturer** (Optional, string): Manufacturer name for the accessory
-    - **serial_number** (Optional, string): Serial number for the accessory, defaults to internal object id
-    - **fw_rev** (Optional, string): Firmware revision for the accessory
-
-The HomeKit service type is automatically determined by the binary sensor's `device_class`:
-- `motion` → Motion Sensor
-- `occupancy` → Occupancy Sensor  
-- `door`, `window`, `opening`, `garage_door`, `vibration`, `tamper` → Contact Sensor
-- `smoke` → Smoke Sensor
-- `gas` → Carbon Monoxide Sensor
-- Unknown/no device class → Contact Sensor (default)
-
-Example:
-```yaml
-homekit:
-  binary_sensor:
-    - id: motion_sensor
-      meta:
-        name: "Motion Sensor"
-        manufacturer: "AMICI&CO"
-        model: "SENSUS-MOTION"
-        serial_number: "MOT001"
-        fw_rev: "0.16.2"
-    - id: door_sensor
-      meta:
-        name: "Front Door"
-        manufacturer: "AMICI&CO"
-        model: "SENSUS-DOOR"  
-        serial_number: "DOOR001"
-        fw_rev: "0.16.2"
-```
-
-> [!TIP]
-> For a comprehensive example with all supported binary sensor types, see [binary-sensors-example.yaml](binary-sensors-example.yaml)
-
 ## 4. HomeKey
 
 > [!NOTE]

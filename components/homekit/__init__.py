@@ -1,7 +1,7 @@
 from esphome import automation
 import esphome.codegen as cg
 import esphome.config_validation as cv
-from esphome.components import mdns, wifi, light, lock, sensor, switch, climate, pn532, fan, cover, binary_sensor
+from esphome.components import mdns, wifi, light, lock, sensor, switch, climate, pn532, fan, cover
 from esphome.const import PLATFORM_ESP32, CONF_ID, CONF_TRIGGER_ID
 from esphome.core import ID, Lambda
 from esphome.components.esp32 import add_idf_component
@@ -24,7 +24,6 @@ LockEntity = homekit_ns.class_('LockEntity')
 FanEntity = homekit_ns.class_('FanEntity')
 ClimateEntity = homekit_ns.class_('ClimateEntity')
 CoverEntity = homekit_ns.class_('CoverEntity')
-BinarySensorEntity = homekit_ns.class_('BinarySensorEntity')
 OnHkSuccessTrigger = homekit_ns.class_(
     "HKAuthTrigger", automation.Trigger.template(cg.std_string, cg.std_string)
 )
@@ -79,7 +78,6 @@ CONFIG_SCHEMA = cv.All(cv.Schema({
     cv.Optional("switch"):  cv.ensure_list({cv.Required(CONF_ID): cv.use_id(switch.Switch), cv.Optional("meta") : ACCESSORY_INFORMATION}),
     cv.Optional("climate"):  cv.ensure_list({cv.Required(CONF_ID): cv.use_id(climate.Climate), cv.Optional("meta") : ACCESSORY_INFORMATION}),
     cv.Optional("cover"):  cv.ensure_list({cv.Required(CONF_ID): cv.use_id(cover.Cover), cv.Optional("meta") : ACCESSORY_INFORMATION}),
-    cv.Optional("binary_sensor"):  cv.ensure_list({cv.Required(CONF_ID): cv.use_id(binary_sensor.BinarySensor), cv.Optional("meta") : ACCESSORY_INFORMATION}),
 }).extend(cv.COMPONENT_SCHEMA),
 cv.only_on([PLATFORM_ESP32]),
 cv.only_with_esp_idf)
@@ -156,18 +154,10 @@ async def to_code(config):
                     info_temp.append([ACC_INFO[m], l["meta"][m]])
                 cg.add(climate_entity.setInfo(info_temp))
     if "cover" in config:
-        for entry in config["cover"]:
-            cover_entity = cg.Pvariable(ID(f"{entry['id'].id}_hk_cover_entity", type=CoverEntity), var.add_cover(await cg.get_variable(entry['id'])))
-            if "meta" in entry:
+        for l in config["cover"]:
+            cover_entity = cg.Pvariable(ID(f"{l['id'].id}_hk_cover_entity", type=CoverEntity), var.add_cover(await cg.get_variable(l['id'])))
+            if "meta" in l:
                 info_temp = []
-                for m in entry["meta"]:
-                    info_temp.append([ACC_INFO[m], entry["meta"][m]])
+                for m in l["meta"]:
+                    info_temp.append([ACC_INFO[m], l["meta"][m]])
                 cg.add(cover_entity.setInfo(info_temp))
-    if "binary_sensor" in config:
-        for entry in config["binary_sensor"]:
-            binary_sensor_entity = cg.Pvariable(ID(f"{entry['id'].id}_hk_binary_sensor_entity", type=BinarySensorEntity), var.add_binary_sensor(await cg.get_variable(entry['id'])))
-            if "meta" in entry:
-                info_temp = []
-                for m in entry["meta"]:
-                    info_temp.append([ACC_INFO[m], entry["meta"][m]])
-                cg.add(binary_sensor_entity.setInfo(info_temp))
