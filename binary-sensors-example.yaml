@@ -1,0 +1,200 @@
+esphome:
+  name: binary_sensors_homekit_example
+  platformio_options:
+    board_build.flash_mode: dio
+
+wifi:
+  ssid: !secret wifi_ssid
+  password: !secret wifi_password
+
+api:
+  reboot_timeout: 0s
+
+web_server:
+  port: 8080
+
+# Use GitHub source for production:
+external_components:
+  - source: github://rednblkx/HAP-ESPHome@main
+    refresh: 0s
+# For development with local components, uncomment below and comment above:
+# external_components:
+#   - source:
+#       type: local
+#       path: components
+
+esp32:
+  board: esp32-c3-devkitm-1
+  flash_size: 4MB
+  framework:
+    type: esp-idf
+    version: 5.3.1
+    platform_version: 6.8.1
+    sdkconfig_options:
+      CONFIG_COMPILER_OPTIMIZATION_SIZE: y
+      CONFIG_LWIP_MAX_SOCKETS: "16"
+      CONFIG_LOG_DEFAULT_LEVEL_ERROR: y
+      CONFIG_LOG_DEFAULT_LEVEL: "1"
+      CONFIG_LOG_MAXIMUM_LEVEL_INFO: y
+      CONFIG_LOG_MAXIMUM_LEVEL: "3"
+      CONFIG_MBEDTLS_HKDF_C: y
+
+# Example binary sensors for different device classes
+binary_sensor:
+  # Motion sensor - appears as Motion Sensor in HomeKit
+  - platform: template
+    id: motion_sensor
+    name: "Motion Sensor"
+    device_class: "motion"
+    lambda: |-
+      return false;  # Replace with actual sensor logic
+
+  # Door sensor - appears as Contact Sensor in HomeKit
+  - platform: template
+    id: door_sensor
+    name: "Front Door"
+    device_class: "door"
+    lambda: |-
+      return false;  # Replace with actual sensor logic
+
+  # Window sensor - appears as Contact Sensor in HomeKit
+  - platform: template
+    id: window_sensor
+    name: "Living Room Window"
+    device_class: "window"
+    lambda: |-
+      return false;  # Replace with actual sensor logic
+
+  # Occupancy sensor - appears as Occupancy Sensor in HomeKit
+  - platform: template
+    id: occupancy_sensor
+    name: "Room Occupancy"
+    device_class: "occupancy"
+    lambda: |-
+      return false;  # Replace with actual sensor logic
+
+  # Smoke sensor - appears as Smoke Sensor in HomeKit
+  - platform: template
+    id: smoke_sensor
+    name: "Smoke Detector"
+    device_class: "smoke"
+    lambda: |-
+      return false;  # Replace with actual sensor logic
+
+  # Gas sensor - appears as Carbon Monoxide Sensor in HomeKit
+  # Note: "gas" device class is specifically mapped to CO sensor.
+  # For generic gas/leak detection, consider using device_class: "moisture" or "water"
+  # which will map to HomeKit Leak Sensor instead.
+  - platform: template
+    id: gas_sensor
+    name: "Gas Detector"
+    device_class: "gas"
+    lambda: |-
+      return false;  # Replace with actual sensor logic
+
+  # Garage door sensor - appears as Contact Sensor in HomeKit
+  - platform: template
+    id: garage_door_sensor
+    name: "Garage Door"
+    device_class: "garage_door"
+    lambda: |-
+      return false;  # Replace with actual sensor logic
+
+  # Vibration sensor - appears as Contact Sensor in HomeKit
+  - platform: template
+    id: vibration_sensor
+    name: "Vibration Sensor"
+    device_class: "vibration"
+    lambda: |-
+      return false;  # Replace with actual sensor logic
+
+  # Moisture/leak sensor - appears as Leak Sensor in HomeKit
+  - platform: template
+    id: moisture_sensor
+    name: "Leak Detector"
+    device_class: "moisture"
+    lambda: |-
+      return false;  # Replace with actual sensor logic
+
+homekit_base:
+  meta:
+    name: "Binary Sensors Example"
+    manufacturer: "Your Company"
+    model: "BSE-1"
+    serial_number: "12345678"
+    fw_rev: "1.0.0"
+  setup_code: '159-35-728'
+
+homekit:
+  binary_sensor:
+    - id: motion_sensor
+      meta:
+        name: "Motion Sensor"
+        manufacturer: "Your Company"
+        model: "Motion-1"
+        serial_number: "MOT001"
+        fw_rev: "1.0.0"
+    - id: door_sensor
+      meta:
+        name: "Front Door"
+        manufacturer: "Your Company"
+        model: "Door-1"
+        serial_number: "DOOR001"
+        fw_rev: "1.0.0"
+    - id: window_sensor
+      meta:
+        name: "Living Room Window"
+        manufacturer: "Your Company"
+        model: "Window-1"
+        serial_number: "WIN001"
+        fw_rev: "1.0.0"
+    - id: occupancy_sensor
+      meta:
+        name: "Room Occupancy"
+        manufacturer: "Your Company"
+        model: "OCC-1"
+        serial_number: "OCC001"
+        fw_rev: "1.0.0"
+    - id: smoke_sensor
+      meta:
+        name: "Smoke Detector"
+        manufacturer: "Your Company"
+        model: "SMOKE-1"
+        serial_number: "SMOKE001"
+        fw_rev: "1.0.0"
+    - id: gas_sensor
+      meta:
+        name: "Gas Detector"
+        manufacturer: "Your Company"
+        model: "GAS-1"
+        serial_number: "GAS001"
+        fw_rev: "1.0.0"
+    - id: garage_door_sensor
+      meta:
+        name: "Garage Door"
+        manufacturer: "Your Company"
+        model: "GARAGE-1"
+        serial_number: "GAR001"
+        fw_rev: "1.0.0"
+    - id: vibration_sensor
+      meta:
+        name: "Vibration Sensor"
+        manufacturer: "Your Company"
+        model: "VIB-1"
+        serial_number: "VIB001"
+        fw_rev: "1.0.0"
+    - id: moisture_sensor
+      meta:
+        name: "Leak Detector"
+        manufacturer: "Your Company"
+        model: "LEAK-1"
+        serial_number: "LEAK001"
+        fw_rev: "1.0.0"
+
+button:
+  - platform: homekit_base
+    factory_reset:
+      name: "Reset Homekit pairings"
+
+logger:
+  level: DEBUG
