@@ -45,6 +45,11 @@ namespace esphome
               *(write->status) = HAP_STATUS_SUCCESS;
             }
           }
+          else if (!strcmp(hap_char_get_type_uuid(write->hc), HAP_CHAR_UUID_CURRENT_DOOR_STATE) ||
+                   !strcmp(hap_char_get_type_uuid(write->hc), HAP_CHAR_UUID_OBSTRUCTION_DETECTED)) {
+            // These are read-only characteristics
+            *(write->status) = HAP_STATUS_RES_READ_ONLY;
+          }
           else {
             *(write->status) = HAP_STATUS_RES_ABSENT;
           }
