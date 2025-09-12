@@ -93,8 +93,17 @@ namespace esphome
         if (serv_priv) {
           binary_sensor::BinarySensor* binarySensorPtr = (binary_sensor::BinarySensor*)serv_priv;
           ESP_LOGD(TAG, "Read called for Accessory %s (%s)", std::to_string(binarySensorPtr->get_object_id_hash()).c_str(), binarySensorPtr->get_name().c_str());
-          hap_val_t sensorValue;
-          sensorValue.b = binarySensorPtr->state;
+          const std::string device_class = binarySensorPtr->get_device_class();
+          const char* service_uuid = nullptr;
+          const char* char_uuid = nullptr;
+          resolve_service_mapping(device_class, service_uuid, char_uuid);
+
+          hap_val_t sensorValue = {};
+          if (std::strcmp(char_uuid, HAP_CHAR_UUID_MOTION_DETECTED) == 0) {
+            sensorValue.b = binarySensorPtr->state;
+          } else {
+            sensorValue.u = binarySensorPtr->state ? 1 : 0;
+          }
           hap_char_update_val(hc, &sensorValue);
           if (status_code) *status_code = HAP_STATUS_SUCCESS;
           return HAP_SUCCESS;
