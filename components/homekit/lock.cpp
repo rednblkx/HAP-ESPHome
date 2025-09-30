@@ -4,10 +4,10 @@
 
 namespace esphome {
 namespace homekit {
-readerData_t LockEntity::readerData;
-nvs_handle LockEntity::savedHKdata;
-pn532::PN532 *LockEntity::nfc_ctx;
 #ifdef USE_HOMEKEY
+readerData_t LockEntity::readerData;
+nvs_handle_t LockEntity::savedHKdata;
+pn532::PN532 *LockEntity::nfc_ctx;
 int LockEntity::nfcAccess_write(hap_write_data_t write_data[], int count,
                                 void *serv_priv, void *write_priv) {
   LockEntity *parent = (LockEntity *)serv_priv;
@@ -363,7 +363,7 @@ void LockEntity::setup() {
       .fw_rev = strdup(accessory_info[FW_REV]),
       .hw_rev = NULL,
       .hw_finish = hkFinishTlvData.get(),
-      .pv = strdup("1.1.0"),
+      .pv = strdup((char*)"1.1.0"),
       .cid = HAP_CID_BRIDGE,
       .identify_routine = acc_identify,
   };
@@ -400,7 +400,7 @@ void LockEntity::setup() {
   hap_serv_t *lockManagement = nullptr;
   nfcAccess = hap_serv_nfc_access_create(0, &management, &nfcSupportedConf);
   lockManagement =
-      hap_serv_lock_management_create(&management, strdup("1.0.0"));
+      hap_serv_lock_management_create(&management, strdup((char*)"1.0.0"));
   hap_serv_set_priv(nfcAccess, this);
   hap_serv_set_write_cb(nfcAccess, nfcAccess_write);
   hap_acc_add_serv(accessory, nfcAccess);
