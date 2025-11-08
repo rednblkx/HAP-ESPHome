@@ -17,6 +17,17 @@ namespace esphome
       static constexpr const char* TAG = "FanEntity";
       fan::Fan* fanPtr;
       
+      /**
+       * @brief Handle incoming HomeKit write requests for a Fan service and apply them to the associated ESPHome fan.
+       *
+       * Processes writes for On, Rotation Speed, and Swing Mode characteristics, updates the HomeKit characteristic values and per-write statuses, batches any requested changes into a single fan call, and performs that call.
+       *
+       * @param write_data Array of write operations provided by HomeKit.
+       * @param count Number of entries in `write_data`.
+       * @param serv_priv Pointer to the associated fan::Fan instance (stored as service private data).
+       * @param write_priv Unused write-private context supplied by HAP.
+       * @return int HAP_SUCCESS.
+       */
       static int fanwrite(hap_write_data_t write_data[], int count, void* serv_priv, void* write_priv) {
         fan::Fan* fanPtr = (fan::Fan*)serv_priv;
         ESP_LOGD(TAG, "Write called for Accessory %s (%s)", std::to_string(fanPtr->get_object_id_hash()).c_str(), fanPtr->get_name().c_str());
@@ -69,6 +80,16 @@ namespace esphome
         return ret;
       }
       
+      /**
+       * @brief Reflects an ESPHome fan's current state into its HomeKit Fan service characteristics.
+       *
+       * Updates the accessory's On, Rotation Speed, and Swing Mode characteristics (if present)
+       * to match the fan's current on/off state, speed (0–100 mapped directly to HomeKit percentage),
+       * and oscillating state (1 = enabled, 0 = disabled). If the accessory, service, or any
+       * characteristic is not found, the function simply returns without error.
+       *
+       * @param obj Pointer to the fan whose state will be propagated to HomeKit.
+       */
       static void on_fanupdate(fan::Fan* obj) {
         ESP_LOGD(TAG, "%s state: %s, speed: %d, oscillating: %s", 
                  obj->get_name().c_str(), 
@@ -108,14 +129,41 @@ namespace esphome
         }
       }
       
+      /**
+       * @brief Handle an identify request for the accessory.
+       *
+       * Logs that the accessory was identified.
+       *
+       * @param ha Pointer to the HomeKit accessory being identified.
+       * @return int `HAP_SUCCESS` on success.
+       */
       static int acc_identify(hap_acc_t* ha) {
         ESP_LOGI(TAG, "Accessory identified");
         return HAP_SUCCESS;
       }
       
     public:
-      FanEntity(fan::Fan* fanPtr) : HAPEntity({{MODEL, "HAP-FAN"}}), fanPtr(fanPtr) {}
+      /**
+ * @brief Construct a HomeKit Fan entity for an ESPHome fan.
+ *
+ * Initializes a HAP fan accessory wrapper using the model identifier "HAP-FAN"
+ * and associates it with the provided ESPHome fan instance.
+ *
+ * @param fanPtr Pointer to the ESPHome `fan::Fan` instance to expose to HomeKit.
+ *               The pointer must remain valid for the lifetime of the FanEntity.
+ */
+FanEntity(fan::Fan* fanPtr) : HAPEntity({{MODEL, "HAP-FAN"}}), fanPtr(fanPtr) {}
       
+      /**
+       * @brief Create and register a HomeKit accessory and Fan service for the ESPHome fan.
+       *
+       * Creates a HomeKit accessory using the accessory_info values (or sensible defaults),
+       * exposes a Fan service with On, Rotation Speed, and Swing Mode characteristics
+       * initialized from the underlying fan state, attaches a write callback so HomeKit
+       * writes are applied to the fan, registers the accessory with the bridged HomeKit
+       * database (unique AID derived from the fan object hash), and subscribes to fan
+       * state updates so changes are reflected back into HomeKit.
+       */
       void setup() {
         hap_acc_cfg_t acc_cfg = {
             .model = strdup(accessory_info[MODEL]),
