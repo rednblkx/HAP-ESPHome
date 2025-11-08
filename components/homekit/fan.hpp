@@ -48,26 +48,36 @@ namespace esphome
             *(write->status) = HAP_STATUS_SUCCESS;
           }
           else if (!strcmp(hap_char_get_type_uuid(write->hc), HAP_CHAR_UUID_ROTATION_SPEED)) {
-            float speed_percentage = write->val.f;
-            ESP_LOGD(TAG, "Received Write for fan '%s' speed -> %.1f%%", fanPtr->get_name().c_str(), speed_percentage);
+            // Only process speed writes if the fan supports speed control
+            if (fanPtr->get_traits().supports_speed()) {
+              float speed_percentage = write->val.f;
+              ESP_LOGD(TAG, "Received Write for fan '%s' speed -> %.1f%%", fanPtr->get_name().c_str(), speed_percentage);
 
-            // Direct mapping: HomeKit percentage (0-100) to ESPHome speed (0-100)
-            int speed_level = static_cast<int>(speed_percentage);
-            
-            ESP_LOGD(TAG, "Setting fan speed to level: %d", speed_level);
-            call.set_speed(speed_level);
-            update_speed = true;
-            hap_char_update_val(write->hc, &(write->val));
-            *(write->status) = HAP_STATUS_SUCCESS;
+              // Direct mapping: HomeKit percentage (0-100) to ESPHome speed (0-100)
+              int speed_level = static_cast<int>(speed_percentage);
+              
+              ESP_LOGD(TAG, "Setting fan speed to level: %d", speed_level);
+              call.set_speed(speed_level);
+              update_speed = true;
+              hap_char_update_val(write->hc, &(write->val));
+              *(write->status) = HAP_STATUS_SUCCESS;
+            } else {
+              *(write->status) = HAP_STATUS_RES_ABSENT;
+            }
           }
           else if (!strcmp(hap_char_get_type_uuid(write->hc), HAP_CHAR_UUID_SWING_MODE)) {
-            bool swing_mode = write->val.i;
-            ESP_LOGD(TAG, "Received Write for fan '%s' oscillation -> %s", fanPtr->get_name().c_str(), swing_mode ? "On" : "Off");
-            
-            call.set_oscillating(swing_mode);
-            update_oscillating = true;
-            hap_char_update_val(write->hc, &(write->val));
-            *(write->status) = HAP_STATUS_SUCCESS;
+            // Only process oscillation writes if the fan supports oscillation
+            if (fanPtr->get_traits().supports_oscillation()) {
+              bool swing_mode = write->val.i;
+              ESP_LOGD(TAG, "Received Write for fan '%s' oscillation -> %s", fanPtr->get_name().c_str(), swing_mode ? "On" : "Off");
+              
+              call.set_oscillating(swing_mode);
+              update_oscillating = true;
+              hap_char_update_val(write->hc, &(write->val));
+              *(write->status) = HAP_STATUS_SUCCESS;
+            } else {
+              *(write->status) = HAP_STATUS_RES_ABSENT;
+            }
           }
           else {
             *(write->status) = HAP_STATUS_RES_ABSENT;
@@ -109,21 +119,25 @@ namespace esphome
               hap_char_update_val(on_char, &state);
             }
             
-            // Update Rotation Speed characteristic
-            hap_char_t* speed_char = hap_serv_get_char_by_uuid(hs, HAP_CHAR_UUID_ROTATION_SPEED);
-            if (speed_char) {
-              hap_val_t speed_val;
-              // Direct mapping: ESPHome speed (0-100) to HomeKit percentage (0-100)
-              speed_val.f = static_cast<float>(obj->speed);
-              hap_char_update_val(speed_char, &speed_val);
+            // Update Rotation Speed characteristic only if the fan supports speed
+            if (obj->get_traits().supports_speed()) {
+              hap_char_t* speed_char = hap_serv_get_char_by_uuid(hs, HAP_CHAR_UUID_ROTATION_SPEED);
+              if (speed_char) {
+                hap_val_t speed_val;
+                // Direct mapping: ESPHome speed (0-100) to HomeKit percentage (0-100)
+                speed_val.f = static_cast<float>(obj->speed);
+                hap_char_update_val(speed_char, &speed_val);
+              }
             }
             
-            // Update Swing Mode characteristic
-            hap_char_t* swing_char = hap_serv_get_char_by_uuid(hs, HAP_CHAR_UUID_SWING_MODE);
-            if (swing_char) {
-              hap_val_t swing_val;
-              swing_val.i = obj->oscillating ? 1 : 0; // 1 = enabled, 0 = disabled
-              hap_char_update_val(swing_char, &swing_val);
+            // Update Swing Mode characteristic only if the fan supports oscillation
+            if (obj->get_traits().supports_oscillation()) {
+              hap_char_t* swing_char = hap_serv_get_char_by_uuid(hs, HAP_CHAR_UUID_SWING_MODE);
+              if (swing_char) {
+                hap_val_t swing_val;
+                swing_val.i = obj->oscillating ? 1 : 0; // 1 = enabled, 0 = disabled
+                hap_char_update_val(swing_char, &swing_val);
+              }
             }
           }
         }
@@ -198,13 +212,19 @@ FanEntity(fan::Fan* fanPtr) : HAPEntity({{MODEL, "HAP-FAN"}}), fanPtr(fanPtr) {}
         /* Create the fan Service with initial state */
         service = hap_serv_fan_create(fanPtr->state);
 
-        // Add Rotation Speed characteristic
-        hap_char_t* speed_char = hap_char_rotation_speed_create(static_cast<float>(fanPtr->speed));
-        hap_serv_add_char(service, speed_char);
+        // Add Rotation Speed characteristic only if the fan supports speed control
+        if (fanPtr->get_traits().supports_speed()) {
+          hap_char_t* speed_char = hap_char_rotation_speed_create(static_cast<float>(fanPtr->speed));
+          hap_serv_add_char(service, speed_char);
+          ESP_LOGD(TAG, "Added speed control to HomeKit fan");
+        }
 
-        // Add Swing Mode characteristic
-        hap_char_t* swing_char = hap_char_swing_mode_create(fanPtr->oscillating ? 1 : 0);
-        hap_serv_add_char(service, swing_char);
+        // Add Swing Mode characteristic only if the fan supports oscillation
+        if (fanPtr->get_traits().supports_oscillation()) {
+          hap_char_t* swing_char = hap_char_swing_mode_create(fanPtr->oscillating ? 1 : 0);
+          hap_serv_add_char(service, swing_char);
+          ESP_LOGD(TAG, "Added oscillation control to HomeKit fan");
+        }
 
         ESP_LOGD(TAG, "ID HASH: %lu", fanPtr->get_object_id_hash());
         hap_serv_set_priv(service, fanPtr);
@@ -221,7 +241,10 @@ FanEntity(fan::Fan* fanPtr) : HAPEntity({{MODEL, "HAP-FAN"}}), fanPtr(fanPtr) {}
         if (!fanPtr->is_internal())
           fanPtr->add_on_state_callback([this]() { FanEntity::on_fanupdate(fanPtr); });
         
-        ESP_LOGI(TAG, "Fan '%s' linked to HomeKit with speed and oscillation control", accessory_name.c_str());
+        ESP_LOGI(TAG, "Fan '%s' linked to HomeKit%s%s", 
+                 accessory_name.c_str(),
+                 fanPtr->get_traits().supports_speed() ? " with speed control" : "",
+                 fanPtr->get_traits().supports_oscillation() ? " with oscillation control" : "");
       }
     };
   }
