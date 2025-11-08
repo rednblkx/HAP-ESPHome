@@ -39,10 +39,9 @@ namespace esphome
           else if (!strcmp(hap_char_get_type_uuid(write->hc), HAP_CHAR_UUID_ROTATION_SPEED)) {
             float speed_percentage = write->val.f;
             ESP_LOGD(TAG, "Received Write for fan '%s' speed -> %.1f%%", fanPtr->get_name().c_str(), speed_percentage);
-            
-            // Convert percentage (0-100) to speed level (1-100)
-            int speed_level = static_cast<int>((speed_percentage / 100.0f) * 100.0f);
-            speed_level = std::max(1, std::min(100, speed_level)); // Clamp between 1-100
+
+            // Direct mapping: HomeKit percentage (0-100) to ESPHome speed (0-100)
+            int speed_level = static_cast<int>(speed_percentage);
             
             ESP_LOGD(TAG, "Setting fan speed to level: %d", speed_level);
             call.set_speed(speed_level);
@@ -93,7 +92,7 @@ namespace esphome
             hap_char_t* speed_char = hap_serv_get_char_by_uuid(hs, HAP_CHAR_UUID_ROTATION_SPEED);
             if (speed_char) {
               hap_val_t speed_val;
-              // Convert speed level (1-100) to percentage (0-100)
+              // Direct mapping: ESPHome speed (0-100) to HomeKit percentage (0-100)
               speed_val.f = static_cast<float>(obj->speed);
               hap_char_update_val(speed_char, &speed_val);
             }
