@@ -6,7 +6,7 @@ from esphome.core import ID, Lambda
 from esphome.components.esp32 import add_idf_component, add_idf_sdkconfig_option
 import re
 
-DEPENDENCIES = ['esp32', 'network']
+DEPENDENCIES = ['esp32', 'network', 'mdns']
 CODEOWNERS = ["@rednblkx"]
 MULTI_CONF = True
 
@@ -52,37 +52,37 @@ async def to_code(config):
     add_idf_component(
         name="esp_hap_core",
         repo="https://github.com/rednblkx/esp-homekit-sdk",
-        ref="upstream",
+        ref="esphome",
         path="components/homekit/esp_hap_core"
     )
     add_idf_component(
         name="esp_hap_apple_profiles",
         repo="https://github.com/rednblkx/esp-homekit-sdk",
-        ref="upstream",
+        ref="esphome",
         path="components/homekit/esp_hap_apple_profiles"
     )
     add_idf_component(
         name="esp_hap_extras",
         repo="https://github.com/rednblkx/esp-homekit-sdk",
-        ref="upstream",
+        ref="esphome",
         path="components/homekit/esp_hap_extras"
     )
     add_idf_component(
         name="esp_hap_platform",
         repo="https://github.com/rednblkx/esp-homekit-sdk",
-        ref="upstream",
+        ref="esphome",
         path="components/homekit/esp_hap_platform"
     )
     add_idf_component(
         name="hkdf-sha",
         repo="https://github.com/rednblkx/esp-homekit-sdk",
-        ref="upstream",
+        ref="esphome",
         path="components/homekit/hkdf-sha"
     )
     add_idf_component(
         name="mu_srp",
         repo="https://github.com/rednblkx/esp-homekit-sdk",
-        ref="upstream",
+        ref="esphome",
         path="components/homekit/mu_srp"
     )
     info_temp = []
