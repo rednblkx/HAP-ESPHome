@@ -90,4 +90,6 @@ async def to_code(config):
     var = cg.new_Pvariable(config[CONF_ID], config["setup_code"], config["setup_id"], info_temp)
     if CONF_PORT in config:
         add_idf_sdkconfig_option("CONFIG_HAP_HTTP_SERVER_PORT", config[CONF_PORT])
+    add_idf_sdkconfig_option("CONFIG_MBEDTLS_HKDF_C", True)
+    add_idf_sdkconfig_option("CONFIG_LWIP_MAX_SOCKETS", 16)
     await cg.register_component(var, config)
