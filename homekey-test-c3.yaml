@@ -7,6 +7,14 @@ wifi:
   ssid: !secret wifi_ssid
   password: !secret wifi_password
 
+api:
+  encryption:
+    key: !secret api_key
+
+ota:
+  - platform: esphome
+    password: !secret ota_password
+
 lock:
   - platform: template
     id: "this_lock"
