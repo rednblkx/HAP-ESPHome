@@ -43,5 +43,7 @@ jobs:
           touch secrets.yaml
           echo 'wifi_ssid: "ssid"' >> secrets.yaml
           echo 'wifi_password: "password"' >> secrets.yaml
+          echo 'api_key: key' >> secrets.yaml
+          echo 'ota_password: password' >> secrets.yaml
       - name: Compile test configuration
         run: esphome compile test.yaml
