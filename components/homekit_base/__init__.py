@@ -1,8 +1,6 @@
 import esphome.codegen as cg
 import esphome.config_validation as cv
-from esphome.components import mdns, wifi, light, lock, sensor, switch
 from esphome.const import CONF_PORT, PLATFORM_ESP32, CONF_ID
-from esphome.core import ID, Lambda
 from esphome.components.esp32 import add_idf_component, add_idf_sdkconfig_option
 import re
 
