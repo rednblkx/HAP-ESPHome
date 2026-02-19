@@ -1,0 +1,67 @@
+esphome:
+    name: homekey-test
+
+wifi:
+  ssid: !secret wifi_ssid
+  password: !secret wifi_password
+
+api:
+  encryption:
+    key: !secret api_key
+
+ota:
+  - platform: esphome
+    password: !secret ota_password
+
+lock:
+  - platform: template
+    id: "this_lock"
+    name: "Main Lock"
+    optimistic: True
+    on_lock:
+    - logger.log: "Door Locked!"
+    on_unlock:
+    - logger.log: "Door Unlocked!"
+
+external_components:
+  source: github://rednblkx/HAP-ESPHome@main
+
+spi:
+  clk_pin: 18
+  miso_pin: 19
+  mosi_pin: 20
+
+pn532_spi:
+  id: nfc_spi_module
+  cs_pin: 21
+  update_interval: 100ms
+
+esp32:
+  board: esp32-c6-devkitm-1
+  flash_size: 16MB
+  framework:
+    type: esp-idf
+
+homekit_base:
+  setup_code: '159-35-728'
+
+homekit:
+  lock:
+    - id: this_lock
+      nfc_id: nfc_spi_module
+      on_hk_success:
+        then:
+          if:
+            condition:
+              lock.is_locked: this_lock
+            then:
+              lock.unlock: this_lock
+            else:
+              lock.lock: this_lock
+      on_hk_fail:
+        lambda: |-
+          ESP_LOGI("HK", "IT FAILED :(");
+      hk_hw_finish: "SILVER"
+
+logger:
+  level: DEBUG
