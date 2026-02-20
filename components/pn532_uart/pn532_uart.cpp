@@ -42,6 +42,10 @@ bool PN532Uart::write_data(const std::vector<uint8_t> &data) {
 }
 
 bool PN532Uart::read_data(std::vector<uint8_t> &data, uint8_t len) {
+  if (this->read_ready_(true) != pn532::PN532ReadReady::READY) {
+    return false;
+  }
+
   // Read data (transmission from the PN532 to the host)
   ESP_LOGV(TAG, "Reading data...");
 
@@ -55,6 +59,10 @@ bool PN532Uart::read_data(std::vector<uint8_t> &data, uint8_t len) {
 
 bool PN532Uart::read_response(uint8_t command, std::vector<uint8_t> &data) {
   ESP_LOGV(TAG, "Reading response");
+
+  if (this->read_ready_(true) != pn532::PN532ReadReady::READY) {
+    return false;
+  }
 
   std::vector<uint8_t> header(7);
   this->read_array(header.data(), 7);
