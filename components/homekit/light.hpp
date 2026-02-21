@@ -11,7 +11,7 @@ namespace esphome
 {
   namespace homekit
   {
-    class LightEntity : public HAPEntity
+    class LightEntity : public HAPEntity, public light::LightTargetStateReachedListener
     {
     private:
       static constexpr const char* TAG = "LightEntity";
@@ -85,6 +85,9 @@ namespace esphome
           }
         }
         return ret;
+      }
+      void on_light_target_state_reached() override {
+        on_light_update(lightPtr);
       }
       static void on_light_update(light::LightState* obj) {
         bool rgb = obj->current_values.get_color_mode() & light::ColorCapability::RGB;
@@ -190,7 +193,7 @@ namespace esphome
         /* Add the Accessory to the HomeKit Database */
         hap_add_bridged_accessory(accessory, hap_get_unique_aid(std::to_string(lightPtr->get_object_id_hash()).c_str()));
         if (!lightPtr->is_internal())
-          lightPtr->add_new_target_state_reached_callback([this]() { LightEntity::on_light_update(lightPtr); });
+          lightPtr->add_target_state_reached_listener(this);
 
         ESP_LOGI(TAG, "Light '%s' linked to HomeKit", accessory_name.c_str());
       }
