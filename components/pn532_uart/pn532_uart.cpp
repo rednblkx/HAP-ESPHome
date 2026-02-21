@@ -1,4 +1,5 @@
 #include "pn532_uart.h"
+#include "esphome/core/helpers.h"
 #include "esphome/core/log.h"
 
 // Based on:
@@ -11,16 +12,16 @@ namespace pn532_uart {
 
 static const char *const TAG = "pn532_uart";
 
+// Maximum bytes to log in verbose hex output
+static constexpr size_t PN532_MAX_LOG_BYTES = 64;
+
 static const uint8_t WAKEUP_REQUEST[] = {0x55, 0x55, 0x00, 0x00, 0x00};
 
 void PN532Uart::setup() {
   uint8_t buf;
 
-  ESP_LOGI(TAG, "PN532Uart setup started!");
-
   this->dump_config();
 
-  ESP_LOGI(TAG, "initiating wakeup...");
   // wakeup
   this->write_array(WAKEUP_REQUEST, sizeof(WAKEUP_REQUEST));
   while (this->available()) {
@@ -35,7 +36,10 @@ bool PN532Uart::is_read_ready() {
 }
 
 bool PN532Uart::write_data(const std::vector<uint8_t> &data) {
-  ESP_LOGV(TAG, "Writing data: %s", format_hex_pretty(data).c_str());
+#if ESPHOME_LOG_LEVEL >= ESPHOME_LOG_LEVEL_VERBOSE
+  char hex_buf[format_hex_pretty_size(PN532_MAX_LOG_BYTES)];
+#endif
+  ESP_LOGV(TAG, "Writing data: %s", format_hex_pretty_to(hex_buf, sizeof(hex_buf), data.data(), data.size()));
   this->write_array(data.data(), data.size());
 
   return(true);
@@ -47,13 +51,16 @@ bool PN532Uart::read_data(std::vector<uint8_t> &data, uint8_t len) {
   }
 
   // Read data (transmission from the PN532 to the host)
-  ESP_LOGV(TAG, "Reading data...");
+  ESP_LOGV(TAG, "Reading data");
 
   data.resize(len);
   this->read_array(data.data(), len);
 
   data.insert(data.begin(), 0x01);
-  ESP_LOGV(TAG, "Read data: %s", format_hex_pretty(data).c_str());
+#if ESPHOME_LOG_LEVEL >= ESPHOME_LOG_LEVEL_VERBOSE
+  char hex_buf[format_hex_pretty_size(PN532_MAX_LOG_BYTES)];
+#endif
+  ESP_LOGV(TAG, "Read data: %s", format_hex_pretty_to(hex_buf, sizeof(hex_buf), data.data(), data.size()));
   return true;
 }
 
@@ -67,7 +74,10 @@ bool PN532Uart::read_response(uint8_t command, std::vector<uint8_t> &data) {
   std::vector<uint8_t> header(7);
   this->read_array(header.data(), 7);
 
-  ESP_LOGV(TAG, "Header data: %s", format_hex_pretty(header).c_str());
+#if ESPHOME_LOG_LEVEL >= ESPHOME_LOG_LEVEL_VERBOSE
+  char hex_buf[format_hex_pretty_size(PN532_MAX_LOG_BYTES)];
+#endif
+  ESP_LOGV(TAG, "Header data: %s", format_hex_pretty_to(hex_buf, sizeof(hex_buf), header.data(), header.size()));
 
   if (header[0] != 0x00 && header[1] != 0x00 && header[2] != 0xFF) {
     // invalid packet
@@ -114,7 +124,7 @@ bool PN532Uart::read_response(uint8_t command, std::vector<uint8_t> &data) {
   data.resize(len + 1);
   this->read_array(data.data(), len + 1);
 
-  ESP_LOGV(TAG, "Response data: %s", format_hex_pretty(data).c_str());
+  ESP_LOGV(TAG, "Response data: %s", format_hex_pretty_to(hex_buf, sizeof(hex_buf), data.data(), data.size()));
 
   uint8_t checksum = header[5] + header[6];  // TFI + Command response code
   if (extended_frame) {
