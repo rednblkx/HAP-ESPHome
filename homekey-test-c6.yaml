@@ -1,7 +1,5 @@
 esphome:
     name: homekey-test
-    platformio_options:
-      board_build.flash_mode: dio
 
 wifi:
   ssid: !secret wifi_ssid
@@ -29,17 +27,17 @@ external_components:
   source: github://rednblkx/HAP-ESPHome@main
 
 spi:
-  clk_pin: 12
-  miso_pin: 13
-  mosi_pin: 11
+  clk_pin: 18
+  miso_pin: 19
+  mosi_pin: 20
 
 pn532_spi:
   id: nfc_spi_module
-  cs_pin: 10
+  cs_pin: 21
   update_interval: 100ms
 
 esp32:
-  board: lolin_s3
+  board: esp32-c6-devkitm-1
   flash_size: 16MB
   framework:
     type: esp-idf
@@ -52,17 +50,17 @@ homekit:
     - id: this_lock
       nfc_id: nfc_spi_module
       on_hk_success:
-        lambda: |-
-          ESP_LOGI("HEREHERE", "IssuerID: %s", x.c_str());
-          ESP_LOGI("HEREHERE", "EndpointID: %s", y.c_str());
-          if (id(this_lock).state == LOCK_STATE_LOCKED) {
-              id(this_lock).unlock();
-          } else {
-              id(this_lock).lock();
-          }
+        then:
+          if:
+            condition:
+              lock.is_locked: this_lock
+            then:
+              lock.unlock: this_lock
+            else:
+              lock.lock: this_lock
       on_hk_fail:
         lambda: |-
-          ESP_LOGI("GSDGSGS", "IT FAILED :(");
+          ESP_LOGI("HK", "IT FAILED :(");
       hk_hw_finish: "SILVER"
 
 logger:

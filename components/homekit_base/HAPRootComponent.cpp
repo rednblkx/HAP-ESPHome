@@ -1,4 +1,6 @@
 #include "HAPRootComponent.h"
+#include <esp_random.h>
+#include "sodium/randombytes.h"
 
 namespace esphome
 {
@@ -18,8 +20,22 @@ namespace esphome
             hap_reset_pairings();
         }
 
+        static const char *randombytes_esp32xx_implementation_name(void)
+        {
+            return CONFIG_IDF_TARGET;
+        }
+
         HAPRootComponent::HAPRootComponent(const char* setup_code, const char* setup_id, std::map<AInfo, const char*> info)
         {
+          const struct randombytes_implementation randombytes_esp32_implementation = {
+              .implementation_name = randombytes_esp32xx_implementation_name,
+              .random = esp_random,
+              .stir = NULL,
+              .uniform = NULL,
+              .buf = esp_fill_random,
+              .close = NULL,
+          };
+          randombytes_set_implementation(&randombytes_esp32_implementation);
             ESP_LOGI(TAG, "[APP] Free memory: %" PRIu32 " bytes", esp_get_free_heap_size());
             ESP_LOGI(TAG, "[APP] IDF version: %s", esp_get_idf_version());
             ESP_LOGI(TAG, "%s", esp_err_to_name(nvs_flash_init()));

@@ -22,12 +22,6 @@ esp32:
   flash_size: 4MB
   framework:
     type: esp-idf
-    version: 5.3.1
-    platform_version: 6.8.1
-    sdkconfig_options:
-      CONFIG_COMPILER_OPTIMIZATION_SIZE: y
-      CONFIG_LWIP_MAX_SOCKETS: "16"
-      CONFIG_MBEDTLS_HKDF_C: y
 
 homekit_base:
   setup_code: '159-35-728'
@@ -36,7 +30,7 @@ homekit:
   light:
     - id: test_light
       meta:
-        manufacturer: "FRIENDS&CO"
+        manufacturer: "AMICI&CO"
         model: "IGNIS"
         serial_number: "42424242"
         fw_rev: "0.16.2"
@@ -61,3 +55,4 @@ light:
 
 logger:
   level: DEBUG
+  hardware_uart: USB_SERIAL_JTAG

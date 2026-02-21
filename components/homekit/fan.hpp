@@ -5,17 +5,16 @@
 #include <hap.h>
 #include <hap_apple_servs.h>
 #include <hap_apple_chars.h>
-#include <map>
+#include "hap_entity.h"
 
 namespace esphome
 {
   namespace homekit
   {
-    class FanEntity
+    class FanEntity : public HAPEntity
     {
     private:
       static constexpr const char* TAG = "FanEntity";
-      std::map<AInfo, const char*> accessory_info = {{NAME, NULL}, {MODEL, "HAP-FAN"}, {SN, NULL}, {MANUFACTURER, "rednblkx"}, {FW_REV, "0.1"}};
       fan::Fan* fanPtr;
       static int fanwrite(hap_write_data_t write_data[], int count, void* serv_priv, void* write_priv) {
         fan::Fan* fanPtr = (fan::Fan*)serv_priv;
@@ -37,7 +36,7 @@ namespace esphome
         }
         return ret;
       }
-      void on_fanupdate(fan::Fan* obj) {
+      static void on_fanupdate(fan::Fan* obj) {
         ESP_LOGD(TAG, "%s state: %s", obj->get_name().c_str(), ONOFF(obj->state));
         hap_acc_t* acc = hap_acc_get_by_aid(hap_get_unique_aid(std::to_string(obj->get_object_id_hash()).c_str()));
         if (acc) {
@@ -53,13 +52,7 @@ namespace esphome
         return HAP_SUCCESS;
       }
     public:
-      FanEntity(fan::Fan* fanPtr) : fanPtr(fanPtr) {}
-      void setInfo(std::map<AInfo, const char*> info) {
-        std::map<AInfo, const char*> merged_info;
-        merged_info.merge(info);
-        merged_info.merge(this->accessory_info);
-        this->accessory_info.swap(merged_info);
-      }
+      FanEntity(fan::Fan* fanPtr) : HAPEntity({{MODEL, "HAP-FAN"}}), fanPtr(fanPtr) {}
       void setup() {
         hap_acc_cfg_t acc_cfg = {
             .model = strdup(accessory_info[MODEL]),
@@ -102,7 +95,7 @@ namespace esphome
         /* Add the Accessory to the HomeKit Database */
         hap_add_bridged_accessory(accessory, hap_get_unique_aid(std::to_string(fanPtr->get_object_id_hash()).c_str()));
         if (!fanPtr->is_internal())
-          fanPtr->add_on_state_callback([this]() { this->on_fanupdate(fanPtr); });
+          fanPtr->add_on_state_callback([this]() { FanEntity::on_fanupdate(fanPtr); });
         ESP_LOGI(TAG, "Fan '%s' linked to HomeKit", accessory_name.c_str());
       }
     };

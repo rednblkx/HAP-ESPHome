@@ -5,7 +5,7 @@
 #include <hap.h>
 #include <hap_apple_servs.h>
 #include <hap_apple_chars.h>
-#include <map>
+#include "hap_entity.h"
 #ifdef USE_HOMEKEY
 #include <nvs.h>
 #include "const.h"
@@ -20,16 +20,19 @@ namespace esphome
 {
   namespace homekit
   {
-    class LockEntity
+    class LockEntity : public HAPEntity
     {
     private:
       static constexpr const char* TAG = "LockEntity";
-      std::map<AInfo, const char*> accessory_info = {{NAME, NULL}, {MODEL, "HAP-LOCK"}, {SN, NULL}, {MANUFACTURER, "rednblkx"}, {FW_REV, "0.1"}};
       lock::Lock* ptrToLock;
+      hap_tlv8_val_t management = {
+        .buf = 0,
+        .buflen = 0
+      };
+      #ifdef USE_HOMEKEY
       static nvs_handle savedHKdata;
       static readerData_t readerData;
       uint8_t tlv8_data[128];
-      #ifdef USE_HOMEKEY
       std::vector<uint8_t> ecpData{ 0x6A, 0x2, 0xCB, 0x2, 0x6, 0x2, 0x11, 0x0 };
       static pn532::PN532* nfc_ctx;
       std::vector<uint8_t> nfcSupportedConfBuffer{ 0x01, 0x01, 0x10, 0x02, 0x01, 0x10 };
@@ -39,23 +42,18 @@ namespace esphome
         .buf = nfcSupportedConfBuffer.data(),
         .buflen = nfcSupportedConfBuffer.size()
       };
-      hap_tlv8_val_t management = {
-        .buf = 0,
-        .buflen = 0
-      };
       std::vector<HKAuthTrigger *> triggers_onhk_;
       std::vector<HKFailTrigger *> triggers_onhk_fail_;
       static int nfcAccess_write(hap_write_data_t write_data[], int count, void* serv_priv, void* write_priv);
       static void hap_event_handler(hap_event_t event, void* data);
       #endif
-      void on_lock_update(lock::Lock* obj);
+      static void on_lock_update(lock::Lock* obj);
       static int lock_write(hap_write_data_t write_data[], int count, void* serv_priv, void* write_priv);
       static int acc_identify(hap_acc_t* ha);
 
 
       public:
       LockEntity(lock::Lock* lockPtr);
-      void setInfo(std::map<AInfo, const char*> info);
       void setup();
       #ifdef USE_HOMEKEY
       void set_nfc_ctx(pn532::PN532* ctx);

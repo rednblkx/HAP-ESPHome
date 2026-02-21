@@ -15,8 +15,16 @@ lock:
     on_unlock:
     - logger.log: "Door Unlocked!"
 
+api:
+  encryption:
+    key: !secret api_key
+
+ota:
+  - platform: esphome
+    password: !secret ota_password
+
 external_components:
-  source: github://rednblkx/HAP-ESPHome@main
+  source: components
 
 spi:
   clk_pin: 18
@@ -33,12 +41,6 @@ esp32:
   flash_size: 4MB
   framework:
     type: esp-idf
-    version: 5.3.1
-    platform_version: 6.8.1
-    sdkconfig_options:
-      CONFIG_COMPILER_OPTIMIZATION_SIZE: y
-      CONFIG_LWIP_MAX_SOCKETS: "16"
-      CONFIG_MBEDTLS_HKDF_C: y
 
 homekit_base:
   setup_code: '159-35-728'
@@ -48,14 +50,14 @@ homekit:
     - id: this_lock
       nfc_id: nfc_spi_module
       on_hk_success:
-        lambda: |-
-          ESP_LOGI("HEREHERE", "IssuerID: %s", x.c_str());
-          ESP_LOGI("HEREHERE", "EndpointID: %s", y.c_str());
-          if (id(this_lock).state == LOCK_STATE_LOCKED) {
-              id(this_lock).unlock();
-          } else {
-              id(this_lock).lock();
-          }
+        then:
+          if:
+            condition:
+              lock.is_locked: this_lock
+            then:
+              lock.unlock: this_lock
+            else:
+              lock.lock: this_lock
       on_hk_fail:
         lambda: |-
           ESP_LOGI("GSDGSGS", "IT FAILED :(");

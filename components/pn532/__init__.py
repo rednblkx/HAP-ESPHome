@@ -1,15 +1,20 @@
-import esphome.codegen as cg
-import esphome.config_validation as cv
 from esphome import automation
+import esphome.codegen as cg
 from esphome.components import nfc
-from esphome.const import CONF_ID, CONF_ON_TAG_REMOVED, CONF_ON_TAG, CONF_TRIGGER_ID
+import esphome.config_validation as cv
+from esphome.const import (
+    CONF_ID,
+    CONF_ON_FINISHED_WRITE,
+    CONF_ON_TAG,
+    CONF_ON_TAG_REMOVED,
+    CONF_TRIGGER_ID,
+)
 
 CODEOWNERS = ["@OttoWinter", "@jesserockz"]
 AUTO_LOAD = ["binary_sensor", "nfc"]
 MULTI_CONF = True
 
 CONF_PN532_ID = "pn532_id"
-CONF_ON_FINISHED_WRITE = "on_finished_write"
 CONF_KEEP_RF_ON = "keep_rf_on"
 
 pn532_ns = cg.esphome_ns.namespace("pn532")
@@ -52,7 +57,7 @@ def CONFIG_SCHEMA(conf):
     if conf:
         raise cv.Invalid(
             "This component has been moved in 1.16, please see the docs for updated "
-            "instructions. https://esphome.io/components/binary_sensor/pn532.html"
+            "instructions. https://esphome.io/components/binary_sensor/pn532/"
         )
 
 

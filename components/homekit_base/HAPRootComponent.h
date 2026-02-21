@@ -28,7 +28,7 @@ namespace homekit {
     static constexpr const char* TAG = "HAPRootComponent";
     std::map<AInfo, const char*> accessory_info = {{NAME, "ESPH Bridge"}, {MODEL, "HAP-BRIDGE"}, {SN, "16161616"}, {MANUFACTURER, "rednblkx"}, {FW_REV, "0.1"}};
   public:
-    float get_setup_priority() const override { return setup_priority::AFTER_WIFI; }
+    float get_setup_priority() const override { return setup_priority::LATE; }
     void factory_reset();
     HAPRootComponent(const char* setup_code = "159-35-728", const char* setup_id = "ES32", std::map<AInfo, const char*> info = {{NAME, "ESPH Bridge"}, {MODEL, "HAP-BRIDGE"}, {SN, "16161616"}, {MANUFACTURER, "rednblkx"}, {FW_REV, "0.1"}});
     void setup() override;

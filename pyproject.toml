@@ -1,0 +1,9 @@
+[project]
+name = "hap-esphome"
+version = "0.1.0"
+description = "ESPHome component providing HomeKit functionality"
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = [
+    "esphome>=2026.1.5",
+]

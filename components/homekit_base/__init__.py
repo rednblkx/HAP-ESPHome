@@ -1,12 +1,10 @@
 import esphome.codegen as cg
 import esphome.config_validation as cv
-from esphome.components import mdns, wifi, light, lock, sensor, switch
 from esphome.const import CONF_PORT, PLATFORM_ESP32, CONF_ID
-from esphome.core import ID, Lambda
 from esphome.components.esp32 import add_idf_component, add_idf_sdkconfig_option
 import re
 
-DEPENDENCIES = ['esp32', 'network']
+DEPENDENCIES = ['esp32', 'network', 'mdns']
 CODEOWNERS = ["@rednblkx"]
 MULTI_CONF = True
 
@@ -49,19 +47,41 @@ cv.only_on([PLATFORM_ESP32]),
 cv.only_with_esp_idf)
 
 async def to_code(config):
-    # cg.add_define("CONFIG_ESP_MFI_DEBUG_ENABLE")
     add_idf_component(
-        name="idf-extra-components",
-        repo="https://github.com/espressif/idf-extra-components.git",
-        ref="master",
-        components=["libsodium", "jsmn", "json_parser", "json_generator"],
-        submodules=["libsodium/libsodium"]
+        name="esp_hap_core",
+        repo="https://github.com/rednblkx/esp-homekit-sdk",
+        ref="esphome",
+        path="components/homekit/esp_hap_core"
     )
     add_idf_component(
-        name="esp-homekit-sdk",
+        name="esp_hap_apple_profiles",
         repo="https://github.com/rednblkx/esp-homekit-sdk",
-        ref="master",
-        components=["esp_hap_core", "esp_hap_apple_profiles", "esp_hap_extras", "esp_hap_platform", "hkdf-sha", "mu_srp"],
+        ref="esphome",
+        path="components/homekit/esp_hap_apple_profiles"
+    )
+    add_idf_component(
+        name="esp_hap_extras",
+        repo="https://github.com/rednblkx/esp-homekit-sdk",
+        ref="esphome",
+        path="components/homekit/esp_hap_extras"
+    )
+    add_idf_component(
+        name="esp_hap_platform",
+        repo="https://github.com/rednblkx/esp-homekit-sdk",
+        ref="esphome",
+        path="components/homekit/esp_hap_platform"
+    )
+    add_idf_component(
+        name="hkdf-sha",
+        repo="https://github.com/rednblkx/esp-homekit-sdk",
+        ref="esphome",
+        path="components/homekit/hkdf-sha"
+    )
+    add_idf_component(
+        name="mu_srp",
+        repo="https://github.com/rednblkx/esp-homekit-sdk",
+        ref="esphome",
+        path="components/homekit/mu_srp"
     )
     info_temp = []
     if "meta" in config:
@@ -70,4 +90,6 @@ async def to_code(config):
     var = cg.new_Pvariable(config[CONF_ID], config["setup_code"], config["setup_id"], info_temp)
     if CONF_PORT in config:
         add_idf_sdkconfig_option("CONFIG_HAP_HTTP_SERVER_PORT", config[CONF_PORT])
+    add_idf_sdkconfig_option("CONFIG_MBEDTLS_HKDF_C", True)
+    add_idf_sdkconfig_option("CONFIG_LWIP_MAX_SOCKETS", 16)
     await cg.register_component(var, config)
