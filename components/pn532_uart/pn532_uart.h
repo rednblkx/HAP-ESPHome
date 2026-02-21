@@ -21,6 +21,7 @@ class PN532Uart : public pn532::PN532,
   bool write_data(const std::vector<uint8_t> &data) override;
   bool read_data(std::vector<uint8_t> &data, uint8_t len) override;
   bool read_response(uint8_t command, std::vector<uint8_t> &data) override;
+  void flush_rx_() override;
 };
 
 }  // namespace pn532_uart

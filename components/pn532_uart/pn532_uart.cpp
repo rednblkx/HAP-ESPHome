@@ -145,6 +145,13 @@ bool PN532Uart::read_response(uint8_t command, std::vector<uint8_t> &data) {
   return true;
 }
 
+void PN532Uart::flush_rx_() {
+  uint8_t buf;
+  while (this->available()) {
+    this->read_byte(&buf);
+  }
+}
+
 void PN532Uart::dump_config() {
   PN532::dump_config();
 }

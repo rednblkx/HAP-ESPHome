@@ -75,6 +75,7 @@ class PN532 : public PollingComponent {
   virtual bool write_data(const std::vector<uint8_t> &data) = 0;
   virtual bool read_data(std::vector<uint8_t> &data, uint8_t len) = 0;
   virtual bool read_response(uint8_t command, std::vector<uint8_t> &data) = 0;
+  virtual void flush_rx_() {}
 
   std::unique_ptr<nfc::NfcTag> read_tag_(nfc::NfcTagUid &uid);
 

@@ -140,6 +140,10 @@ void PN532::update() {
 
   // Enhanced Contactless Polling sequence
   if (this->ecp_frame.size() > 0) {
+    // Drain any stale data left in the RX buffer (e.g. from HomeKey
+    // inDataExchange calls) to prevent ACK misreads.
+    this->flush_rx_();
+
     if (this->next_flow_ == 0) {
       if (!this->write_command_({
               PN532_COMMAND_WRITEREGISTER,
