@@ -4,10 +4,10 @@
 
 namespace esphome {
 namespace homekit {
+#ifdef USE_HOMEKEY
 readerData_t LockEntity::readerData;
 nvs_handle LockEntity::savedHKdata;
 pn532::PN532 *LockEntity::nfc_ctx;
-#ifdef USE_HOMEKEY
 int LockEntity::nfcAccess_write(hap_write_data_t write_data[], int count,
                                 void *serv_priv, void *write_priv) {
   LockEntity *parent = (LockEntity *)serv_priv;
@@ -278,6 +278,8 @@ std::string intToFinishString(HKFinish d) {
     break;
   }
 }
+
+#ifdef USE_HOMEKEY
 std::string hex_representation(const std::vector<uint8_t> &v) {
   std::string hex_tmp;
   for (auto x : v) {
@@ -287,8 +289,6 @@ std::string hex_representation(const std::vector<uint8_t> &v) {
   }
   return hex_tmp;
 }
-
-#ifdef USE_HOMEKEY
 void LockEntity::register_onhk_trigger(HKAuthTrigger *trig) {
   triggers_onhk_.push_back(trig);
 }
@@ -362,7 +362,6 @@ void LockEntity::setup() {
       .manufacturer = strdup(accessory_info[MANUFACTURER]),
       .fw_rev = strdup(accessory_info[FW_REV]),
       .hw_rev = NULL,
-      .hw_finish = hkFinishTlvData.get(),
       .pv = strdup("1.1.0"),
       .cid = HAP_CID_BRIDGE,
       .identify_routine = acc_identify,
@@ -381,6 +380,9 @@ void LockEntity::setup() {
   } else {
     acc_cfg.serial_num = strdup(accessory_info[SN]);
   }
+#ifdef USE_HOMEKEY
+  acc_cfg.hw_finish = hkFinishTlvData.get();
+#endif
   accessory = hap_acc_create(&acc_cfg);
   lockMechanism =
       hap_serv_lock_mechanism_create(ptrToLock->state, ptrToLock->state);
@@ -393,14 +395,12 @@ void LockEntity::setup() {
 
   /* Add the Lock Service to the Accessory Object */
   hap_acc_add_serv(accessory, lockMechanism);
+  hap_acc_add_serv(accessory, hap_serv_lock_management_create(&management, strdup("1.0.0")));
 
 #ifdef USE_HOMEKEY
   hap_register_event_handler(hap_event_handler);
   hap_serv_t *nfcAccess = nullptr;
-  hap_serv_t *lockManagement = nullptr;
   nfcAccess = hap_serv_nfc_access_create(0, &management, &nfcSupportedConf);
-  lockManagement =
-      hap_serv_lock_management_create(&management, strdup("1.0.0"));
   hap_serv_set_priv(nfcAccess, this);
   hap_serv_set_write_cb(nfcAccess, nfcAccess_write);
   hap_acc_add_serv(accessory, nfcAccess);

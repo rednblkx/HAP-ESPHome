@@ -25,10 +25,14 @@ namespace esphome
     private:
       static constexpr const char* TAG = "LockEntity";
       lock::Lock* ptrToLock;
+      hap_tlv8_val_t management = {
+        .buf = 0,
+        .buflen = 0
+      };
+      #ifdef USE_HOMEKEY
       static nvs_handle savedHKdata;
       static readerData_t readerData;
       uint8_t tlv8_data[128];
-      #ifdef USE_HOMEKEY
       std::vector<uint8_t> ecpData{ 0x6A, 0x2, 0xCB, 0x2, 0x6, 0x2, 0x11, 0x0 };
       static pn532::PN532* nfc_ctx;
       std::vector<uint8_t> nfcSupportedConfBuffer{ 0x01, 0x01, 0x10, 0x02, 0x01, 0x10 };
@@ -37,10 +41,6 @@ namespace esphome
       hap_tlv8_val_t nfcSupportedConf = {
         .buf = nfcSupportedConfBuffer.data(),
         .buflen = nfcSupportedConfBuffer.size()
-      };
-      hap_tlv8_val_t management = {
-        .buf = 0,
-        .buflen = 0
       };
       std::vector<HKAuthTrigger *> triggers_onhk_;
       std::vector<HKFailTrigger *> triggers_onhk_fail_;
