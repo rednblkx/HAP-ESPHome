@@ -17,6 +17,24 @@ static const char *const TAG = "pn532";
 void PN532::setup() {
   ESP_LOGCONFIG(TAG, "Running setup");
 
+  // To avoid cases where the PN532 falls asleep again, we need to set a default SAM configuration first
+  if (!this->write_command_({
+          PN532_COMMAND_SAMCONFIGURATION,
+          0x01,  // normal mode
+          0xff,  // max. timeout
+      })) {
+    ESP_LOGE(TAG, "No wakeup ack");
+    this->mark_failed();
+    return;
+  }
+
+  std::vector<uint8_t> wakeup_result;
+  if (!this->read_response(PN532_COMMAND_SAMCONFIGURATION, wakeup_result)) {
+    this->error_code_ = WAKEUP_FAILED;
+    this->mark_failed();
+    return;
+  }
+
   // Get version data
   if (!this->write_command_({PN532_COMMAND_VERSION_DATA})) {
     ESP_LOGW(TAG, "Error sending version command, trying again");
@@ -37,24 +55,6 @@ void PN532::setup() {
            "Found chip PN5%02X\n"
            "Firmware ver. %d.%d",
            version_data[0], version_data[1], version_data[2]);
-
-  if (!this->write_command_({
-          PN532_COMMAND_SAMCONFIGURATION,
-          0x01,  // normal mode
-          0x14,  // zero timeout (not in virtual card mode)
-          0x01,
-      })) {
-    ESP_LOGE(TAG, "No wakeup ack");
-    this->mark_failed();
-    return;
-  }
-
-  std::vector<uint8_t> wakeup_result;
-  if (!this->read_response(PN532_COMMAND_SAMCONFIGURATION, wakeup_result)) {
-    this->error_code_ = WAKEUP_FAILED;
-    this->mark_failed();
-    return;
-  }
 
   // Set up SAM (secure access module)
   uint8_t sam_timeout = std::min<uint8_t>(255u, this->update_interval_ / 50);
@@ -104,14 +104,16 @@ void PN532::setup() {
     return;
   }
 
-  this->turn_off_rf_();
+  if(!keep_rf_on_) {
+    this->turn_off_rf_();
+  }
 }
 
 bool PN532::powerdown() {
   updates_enabled_ = false;
   requested_read_ = false;
   ESP_LOGI(TAG, "Powering down PN532");
-  if (!this->write_command_({PN532_COMMAND_POWERDOWN, 0b10100000})) {  // enable i2c,spi wakeup
+  if (!this->write_command_({PN532_COMMAND_POWERDOWN, 0b10110000})) {  // enable i2c,spi,hsu wakeup
     ESP_LOGE(TAG, "Error writing powerdown command to PN532");
     return false;
   }
@@ -138,6 +140,10 @@ void PN532::update() {
 
   // Enhanced Contactless Polling sequence
   if (this->ecp_frame.size() > 0) {
+    // Drain any stale data left in the RX buffer (e.g. from HomeKey
+    // inDataExchange calls) to prevent ACK misreads.
+    this->flush_rx_();
+
     if (this->next_flow_ == 0) {
       if (!this->write_command_({
               PN532_COMMAND_WRITEREGISTER,
@@ -247,7 +253,9 @@ void PN532::loop() {
         trigger->process(tag);
     }
     this->current_uid_ = {};
-    // this->turn_off_rf_();
+    if(!keep_rf_on_) {
+      this->turn_off_rf_();
+    }
     this->next_flow_ = 0;
     return;
   }
@@ -262,7 +270,9 @@ void PN532::loop() {
         trigger->process(tag);
     }
     this->current_uid_ = {};
-    // this->turn_off_rf_();
+    if(!keep_rf_on_) {
+      this->turn_off_rf_();
+    }
     this->next_flow_ = 0;
     return;
   } else {
@@ -349,7 +359,9 @@ void PN532::loop() {
 
   this->read_mode();
 
-  this->turn_off_rf_();
+  if(!keep_rf_on_) {
+    this->turn_off_rf_();
+  }
 
   this->next_flow_ = 0;
 }
