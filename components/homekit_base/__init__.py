@@ -43,8 +43,7 @@ CONFIG_SCHEMA = cv.All(cv.Schema({
     cv.Optional("setup_code", default="159-35-728"): hk_setup_code,
     cv.Optional("setup_id", default="ES32"): cv.All(cv.string_strict,cv.Upper,cv.Length(min=4, max=4, msg="Setup ID has to be a 4 character long alpha numeric string (with capital letters)"))
 }).extend(cv.COMPONENT_SCHEMA),
-cv.only_on([PLATFORM_ESP32]),
-cv.only_with_esp_idf)
+cv.only_on_esp32)
 
 async def to_code(config):
     add_idf_component(
