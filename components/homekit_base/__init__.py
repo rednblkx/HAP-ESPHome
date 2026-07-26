@@ -1,6 +1,7 @@
 import esphome.codegen as cg
 import esphome.config_validation as cv
 from esphome.const import CONF_PORT, PLATFORM_ESP32, CONF_ID
+from esphome.core import CORE
 from esphome.components.esp32 import add_idf_component, add_idf_sdkconfig_option
 import re
 
@@ -46,6 +47,8 @@ CONFIG_SCHEMA = cv.All(cv.Schema({
 cv.only_on_esp32)
 
 async def to_code(config):
+    if getattr(CORE, "using_toolchain_esp_idf", False):
+        cg.add_platformio_option("lib_ignore", ["libsodium"])
     add_idf_component(
         name="esp_hap_core",
         repo="https://github.com/rednblkx/esp-homekit-sdk",
