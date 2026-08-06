@@ -60,8 +60,8 @@ namespace esphome
       SensorEntity(sensor::Sensor* sensorPtr) : HAPEntity({{MODEL, "HAP-SENSOR"}}), sensorPtr(sensorPtr) {}
       void setup() {
         hap_serv_t* service = nullptr;
-
-        std::string device_class = sensorPtr->get_device_class();
+        char dc_buf[MAX_DEVICE_CLASS_LENGTH];
+        std::string device_class = sensorPtr->get_device_class_to(dc_buf);
         if (std::equal(device_class.begin(), device_class.end(), strdup("temperature"))) {
           service = hap_serv_temperature_sensor_create(sensorPtr->state);
         }
