@@ -19,6 +19,9 @@
 #ifdef USE_SENSOR
 #include "sensor.hpp"
 #endif
+#ifdef USE_COVER
+#include "cover.hpp"
+#endif
 #ifdef USE_CLIMATE
 #include "climate.hpp"
 #endif
@@ -61,6 +64,10 @@ namespace esphome
       #ifdef USE_SENSOR
       std::vector<SensorEntity*> sensors;
       SensorEntity* add_sensor(sensor::Sensor* sensorPtr, TemperatureUnits units);
+      #endif
+      #ifdef USE_COVER
+      std::vector<CoverEntity*> covers;
+      CoverEntity* add_cover(cover::Cover* coverPtr);
       #endif
       #ifdef USE_CLIMATE
       std::vector<ClimateEntity*> climates;
