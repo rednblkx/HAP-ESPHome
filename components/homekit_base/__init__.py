@@ -48,7 +48,20 @@ cv.only_on_esp32)
 
 async def to_code(config):
     if getattr(CORE, "using_toolchain_esp_idf", False):
+        # Under Arduino, ESPHome already bundles its own libsodium port
+        # (used for API Noise encryption), so pulling in another one would
+        # cause duplicate-symbol conflicts - hence lib_ignore for Arduino.
+        # Under ESP-IDF there is no such bundled libsodium, and unlike a
+        # git-based add_idf_component() dependency (like the esp_hap_*
+        # components below), this one must come from the ESP-IDF Component
+        # Registry so its CMakeLists.txt declares itself as a proper
+        # REQUIRES/PRIV_REQUIRES target - which is what makes
+        # "sodium/randombytes.h" resolvable from HAPRootComponent.cpp.
         cg.add_platformio_option("lib_ignore", ["libsodium"])
+        add_idf_component(
+            name="espressif/libsodium",
+            ref="1.0.20",
+        )
     add_idf_component(
         name="esp_hap_core",
         repo="https://github.com/rednblkx/esp-homekit-sdk",

@@ -27,7 +27,7 @@ namespace esphome
 
         HAPRootComponent::HAPRootComponent(const char* setup_code, const char* setup_id, std::map<AInfo, const char*> info)
         {
-          const struct randombytes_implementation randombytes_esp32_implementation = {
+          struct randombytes_implementation randombytes_esp32_implementation = {
               .implementation_name = randombytes_esp32xx_implementation_name,
               .random = esp_random,
               .stir = NULL,
