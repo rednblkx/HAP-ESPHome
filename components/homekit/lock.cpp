@@ -1,9 +1,46 @@
 #include <esphome/core/defines.h>
 #ifdef USE_LOCK
 #include "lock.h"
+#include <mbedtls/sha1.h>
+#include <mbedtls/sha256.h>
 
 namespace esphome {
 namespace homekit {
+
+// HK-HomeKit-Lib verplaatste hk_utils naar priv/ (niet meer publiek) en hernoemde
+// het naar red_log. Alleen bufToHexString + getHashIdentifier werden hier gebruikt,
+// dus die staan nu lokaal -- geen afhankelijkheid van library-interne headers.
+// getHashIdentifier is 1-op-1 overgenomen uit de oude utils.cpp: de uitkomst
+// identificeert opgeslagen issuers in NVS en MOET identiek blijven.
+// De LOG()-macro kwam vroeger mee via het publieke hk-utils.h; die header is nu
+// privé. Zelfde vorm als het origineel, zodat de logregels niet veranderen.
+#ifndef LOG
+#define LOG(x, format, ...) \
+  ESP_LOG##x(TAG, "%s > " format, __FUNCTION__ __VA_OPT__(, ) __VA_ARGS__)
+#endif
+
+namespace hk_compat {
+inline std::string bufToHexString(const uint8_t *buf, size_t len,
+                                  bool ignoreLevel = false) {
+  return format_hex_pretty(buf, len);
+}
+inline std::vector<uint8_t> getHashIdentifier(const uint8_t *key, size_t len,
+                                              bool sha256) {
+  std::vector<uint8_t> hashable;
+  if (sha256) {
+    const std::string prefix = "key-identifier";
+    hashable.insert(hashable.begin(), prefix.begin(), prefix.end());
+  }
+  hashable.insert(hashable.end(), key, key + len);
+  uint8_t hash[32];
+  if (sha256) {
+    mbedtls_sha256(hashable.data(), hashable.size(), hash, 0);
+  } else {
+    mbedtls_sha1(hashable.data(), hashable.size(), hash);
+  }
+  return std::vector<uint8_t>{hash, hash + (sha256 ? 8 : 6)};
+}
+}  // namespace hk_compat
 #ifdef USE_HOMEKEY
 readerData_t LockEntity::readerData;
 nvs_handle LockEntity::savedHKdata;
@@ -12,19 +49,19 @@ int LockEntity::nfcAccess_write(hap_write_data_t write_data[], int count,
                                 void *serv_priv, void *write_priv) {
   LockEntity *parent = (LockEntity *)serv_priv;
   LOG(I, "PROVISIONED READER KEY: %s",
-      hk_utils::bufToHexString(parent->readerData.reader_sk.data(),
+      hk_compat::bufToHexString(parent->readerData.reader_sk.data(),
                                parent->readerData.reader_sk.size(), true)
           .c_str());
   LOG(I, "READER PUBLIC KEY: %s",
-      hk_utils::bufToHexString(parent->readerData.reader_pk.data(),
+      hk_compat::bufToHexString(parent->readerData.reader_pk.data(),
                                parent->readerData.reader_pk.size(), true)
           .c_str());
   LOG(I, "READER GROUP IDENTIFIER: %s",
-      hk_utils::bufToHexString(parent->readerData.reader_gid.data(),
+      hk_compat::bufToHexString(parent->readerData.reader_gid.data(),
                                parent->readerData.reader_gid.size(), true)
           .c_str());
   LOG(I, "READER UNIQUE IDENTIFIER: %s",
-      hk_utils::bufToHexString(parent->readerData.reader_id.data(),
+      hk_compat::bufToHexString(parent->readerData.reader_id.data(),
                                parent->readerData.reader_id.size(), true)
           .c_str());
   int i, ret = HAP_SUCCESS;
@@ -39,7 +76,7 @@ int LockEntity::nfcAccess_write(hap_write_data_t write_data[], int count,
       auto tlv_rx_data = std::vector<uint8_t>(buf.buf, buf.buf + buf.buflen);
       ESP_LOGD(
           TAG, "TLV RX DATA: %s SIZE: %d",
-          hk_utils::bufToHexString(tlv_rx_data.data(), tlv_rx_data.size(), true)
+          hk_compat::bufToHexString(tlv_rx_data.data(), tlv_rx_data.size(), true)
               .c_str(),
           tlv_rx_data.size());
       HK_HomeKit ctx(parent->readerData, parent->savedHKdata, "READERDATA",
@@ -69,22 +106,22 @@ void LockEntity::hap_event_handler(hap_event_t event, void *data) {
     hap_ctrl_data_t *ctrl = hap_get_controller_data(ctrl_id);
     if (ctrl->valid) {
       std::vector<uint8_t> id =
-          hk_utils::getHashIdentifier(ctrl->info.ltpk, 32, true);
+          hk_compat::getHashIdentifier(ctrl->info.ltpk, 32, true);
       ESP_LOG_BUFFER_HEX(TAG, ctrl->info.ltpk, 32);
       LOG(D, "Found allocated controller - Hash: %s",
-          hk_utils::bufToHexString(id.data(), 8).c_str());
+          hk_compat::bufToHexString(id.data(), 8).c_str());
       hkIssuer_t *foundIssuer = nullptr;
       for (auto &issuer : readerData.issuers) {
         if (!memcmp(issuer.issuer_id.data(), id.data(), 8)) {
           LOG(D, "Issuer %s already added, skipping",
-              hk_utils::bufToHexString(issuer.issuer_id.data(), 8).c_str());
+              hk_compat::bufToHexString(issuer.issuer_id.data(), 8).c_str());
           foundIssuer = &issuer;
           break;
         }
       }
       if (foundIssuer == nullptr) {
         LOG(D, "Adding new issuer - ID: %s",
-            hk_utils::bufToHexString(id.data(), 8).c_str());
+            hk_compat::bufToHexString(id.data(), 8).c_str());
         hkIssuer_t issuer;
         issuer.issuer_id = id;
         issuer.issuer_pk.insert(issuer.issuer_pk.begin(), ctrl->info.ltpk,
@@ -117,14 +154,14 @@ void LockEntity::hap_event_handler(hap_event_t event, void *data) {
     //   readerData.issuers.end(),
     //   //   [ctrl](HomeKeyData_KeyIssuer x) {
     //   //     std::vector<uint8_t> id =
-    //   hk_utils::getHashIdentifier(ctrl->info.ltpk, 32, true);
+    //   hk_compat::getHashIdentifier(ctrl->info.ltpk, 32, true);
     //   //     LOG(D, "Found allocated controller - Hash: %s",
-    //   hk_utils::bufToHexString(id.data(), 8).c_str());
+    //   hk_compat::bufToHexString(id.data(), 8).c_str());
     //   //     if (!memcmp(x.publicKey, id.data(), 8)) {
     //   //       return false;
     //   //     }
     //   //     LOG(D, "Issuer ID: %s - Associated controller was removed from
-    //   Home, erasing from reader data.", hk_utils::bufToHexString(x.issuerId,
+    //   Home, erasing from reader data.", hk_compat::bufToHexString(x.issuerId,
     //   8).c_str());
     //   //     return true;
     //   //   }),
@@ -136,8 +173,10 @@ void LockEntity::hap_event_handler(hap_event_t event, void *data) {
 #endif
 
 void LockEntity::on_lock_update(lock::Lock *obj) {
+  // lock_state_to_string geeft een LogString*, geen char*: zonder LOG_STR_ARG
+  // krijgt printf het verkeerde type (compiler-warning + undefined behavior).
   ESP_LOGD("on_lock_update", "%s state: %s", obj->get_name().c_str(),
-           lock_state_to_string(obj->state));
+           LOG_STR_ARG(lock_state_to_string(obj->state)));
   hap_acc_t *acc = hap_acc_get_by_aid(
       hap_get_unique_aid(std::to_string(obj->get_object_id_hash()).c_str()));
   hap_serv_t *hs = hap_acc_get_serv_by_uuid(acc, HAP_SERV_UUID_LOCK_MECHANISM);
@@ -238,19 +277,19 @@ LockEntity::LockEntity(lock::Lock *lockPtr)
     // }
   }
   LOG(D, "PROVISIONED READER KEY: %s",
-      hk_utils::bufToHexString(readerData.reader_sk.data(),
+      hk_compat::bufToHexString(readerData.reader_sk.data(),
                                readerData.reader_sk.size(), true)
           .c_str());
   LOG(D, "READER PUBLIC KEY: %s",
-      hk_utils::bufToHexString(readerData.reader_pk.data(),
+      hk_compat::bufToHexString(readerData.reader_pk.data(),
                                readerData.reader_pk.size(), true)
           .c_str());
   LOG(D, "READER GROUP IDENTIFIER: %s",
-      hk_utils::bufToHexString(readerData.reader_gid.data(),
+      hk_compat::bufToHexString(readerData.reader_gid.data(),
                                readerData.reader_gid.size(), true)
           .c_str());
   LOG(D, "READER UNIQUE IDENTIFIER: %s",
-      hk_utils::bufToHexString(readerData.reader_id.data(),
+      hk_compat::bufToHexString(readerData.reader_id.data(),
                                readerData.reader_id.size(), true)
           .c_str());
   LOG(D, "ISSUERS COUNT: %d", readerData.issuers.size());
@@ -309,16 +348,18 @@ void LockEntity::set_nfc_ctx(pn532::PN532 *ctx) {
   auto automation_id_3 = new Automation<std::string, nfc::NfcTag>(trigger);
   auto lambdaaction_id_3 = new LambdaAction<std::string, nfc::NfcTag>(
       [this, ctx](std::string x, nfc::NfcTag tag) -> void {
-        std::function<bool(uint8_t *, uint8_t, uint8_t *, uint16_t *, bool)>
-            lambda = [=](uint8_t *send, uint8_t sendLen, uint8_t *res,
-                         uint16_t *resLen, bool ignoreLog) -> bool {
-          auto data =
-              ctx->inDataExchange(std::vector<uint8_t>(send, send + sendLen));
-          data.erase(data.begin());
+        // HK-HomeKit-Lib esp-idf-branch gebruikt sinds "replace in/out buf ptr
+        // args for nfc delegate with std::vector" vectoren i.p.v. rauwe buffers.
+        std::function<bool(std::vector<uint8_t> &, std::vector<uint8_t> &, bool)>
+            lambda = [=](std::vector<uint8_t> &send, std::vector<uint8_t> &recv,
+                         bool ignoreLog) -> bool {
+          auto data = ctx->inDataExchange(send);
+          if (data.empty()) {
+            return false;
+          }
+          data.erase(data.begin());  // eerste byte is de PN532-status
           ESP_LOGD(TAG, "%s", format_hex_pretty(data).c_str());
-          memcpy(res, data.data(), data.size());
-          uint16_t t = data.size();
-          memcpy(resLen, &t, sizeof(uint16_t));
+          recv = std::move(data);
           return true;
         };
         auto versions =

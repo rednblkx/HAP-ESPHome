@@ -49,6 +49,12 @@ cv.only_on_esp32)
 async def to_code(config):
     if getattr(CORE, "using_toolchain_esp_idf", False):
         cg.add_platformio_option("lib_ignore", ["libsodium"])
+    # HK-HomeKit-Lib heeft libsodium sinds de esp-idf-branch als PRIV_REQUIRES,
+    # dus consumers erven de include-paden niet meer. HAPRootComponent.cpp
+    # includeert sodium/randombytes.h direct (om de ESP32-hardware-RNG als
+    # randombytes-implementatie te registreren), dus registreren we libsodium
+    # expliciet: ESPHome zet managed components in de REQUIRES van "src".
+    add_idf_component(name="espressif/libsodium", ref="^1.0.20~1")
     add_idf_component(
         name="esp_hap_core",
         repo="https://github.com/rednblkx/esp-homekit-sdk",

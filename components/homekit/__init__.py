@@ -108,7 +108,7 @@ async def to_code(config):
                 add_idf_component(
                     name="HK-HomeKit-Lib",
                     repo="https://github.com/rednblkx/HK-HomeKit-Lib.git",
-                    ref="a4af730ec54536e1ba931413206fec89ce2b6c4f"
+                    ref="c6a5b958bf4312c53df2c9e6aebe846336998861"
                 )
                 for conf in l.get("on_hk_success", []):
                     trigger = cg.new_Pvariable(conf[CONF_TRIGGER_ID])
