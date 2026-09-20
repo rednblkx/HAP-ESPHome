@@ -37,6 +37,11 @@ namespace esphome
         v->setup();
       }
       #endif
+      #ifdef USE_COVER
+      for (const auto v : covers) {
+        v->setup();
+      }
+      #endif
       #ifdef USE_CLIMATE
       for (const auto v : climates) {
         v->setup();
@@ -58,6 +63,9 @@ namespace esphome
       #endif
       #ifdef USE_SWITCH
       ESP_LOGCONFIG(TAG, "Switch HK Entities: %d", switches.size());
+      #endif
+      #ifdef USE_COVER
+      ESP_LOGCONFIG(TAG, "Cover HK Entities: %d", covers.size());
       #endif
     }
     #ifdef USE_LIGHT
@@ -96,6 +104,12 @@ namespace esphome
     SensorEntity* HAPAccessory::add_sensor(sensor::Sensor* sensorPtr, TemperatureUnits units) {
       sensors.push_back(new SensorEntity(sensorPtr));
       return sensors.back();
+    }
+    #endif
+    #ifdef USE_COVER
+    CoverEntity* HAPAccessory::add_cover(cover::Cover* coverPtr) {
+      covers.push_back(new CoverEntity(coverPtr));
+      return covers.back();
     }
     #endif
     #ifdef USE_CLIMATE
