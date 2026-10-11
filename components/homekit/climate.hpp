@@ -186,10 +186,10 @@ namespace esphome
         }
         ESP_LOGI(TAG, "CTemp: %.2f TTemp: %.2f CHum: %.2f THum: %.2f", this->climatePtr->current_temperature, this->climatePtr->target_temperature, this->climatePtr->current_humidity, this->climatePtr->target_humidity);
         service = hap_serv_thermostat_create(current_mode, target_mode, this->climatePtr->current_temperature, this->climatePtr->target_temperature, units);
-        if (climateTraits.get_supports_current_humidity()) {
+        if (climateTraits.has_feature_flags(climate::CLIMATE_SUPPORTS_CURRENT_HUMIDITY)) {
           hap_serv_add_char(service, hap_char_current_relative_humidity_create(this->climatePtr->current_humidity));
         }
-        if (climateTraits.get_supports_target_humidity()) {
+        if (climateTraits.has_feature_flags(climate::CLIMATE_SUPPORTS_TARGET_HUMIDITY)) {
           hap_serv_add_char(service, hap_char_target_relative_humidity_create(this->climatePtr->target_humidity));
         }
         // service_fan = hap_serv_fan_v2_create(!this->climatePtr->fan_mode ? 1 : 0);
