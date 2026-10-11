@@ -26,7 +26,7 @@ namespace esphome
             hap_char_t* on_char = hap_serv_get_first_char(hs);
             ESP_LOGD(TAG, "HAP CURRENT VALUE - f:%.2f u:%lu", hap_char_get_val(on_char)->f, hap_char_get_val(on_char)->u);
             hap_val_t state;
-            if (ceilf(v) == v) {
+            if (hap_char_get_format(on_char) != HAP_CHAR_FORMAT_FLOAT) {
               state.u = v;
             } else {
               state.f = v;
@@ -42,7 +42,7 @@ namespace esphome
           ESP_LOGD(TAG, "Read called for Accessory %s (%s)", std::to_string(sensorPtr->get_object_id_hash()).c_str(), sensorPtr->get_name().c_str());
           hap_val_t sensorValue;
           float v = sensorPtr->get_state();
-          if (ceilf(v) == v) {
+          if (hap_char_get_format(hc) != HAP_CHAR_FORMAT_FLOAT) {
             sensorValue.u = v;
           } else {
             sensorValue.f = v;
