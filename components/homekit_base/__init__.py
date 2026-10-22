@@ -3,6 +3,7 @@ import esphome.config_validation as cv
 from esphome.const import CONF_PORT, PLATFORM_ESP32, CONF_ID
 from esphome.core import CORE
 from esphome.components.esp32 import add_idf_component, add_idf_sdkconfig_option
+from pathlib import Path
 import re
 
 DEPENDENCIES = ['esp32', 'network', 'mdns']
@@ -49,7 +50,17 @@ cv.only_on_esp32)
 async def to_code(config):
     if getattr(CORE, "using_toolchain_esp_idf", False):
         cg.add_platformio_option("lib_ignore", ["libsodium"])
-    add_idf_component(name="espressif/libsodium", ref="^1.0.20~1")
+    # Every */libsodium dependency resolves to this local "libsodium", so ESPHome 2026.10's
+    # esphome/libsodium (api/ota encryption) and espressif/libsodium no longer collide
+    add_idf_component(name="libsodium", path=str(Path(__file__).parent / "libsodium"))
+    # Espressif's full port (1.0.22~1) behind it, as HomeKit pairing needs Ed25519 signing;
+    # from git, since a registry */libsodium dependency would resolve to the local one again
+    add_idf_component(
+        name="libsodium_full",
+        repo="https://github.com/espressif/idf-extra-components.git",
+        ref="1e32ecf000d79db25389d44d29d04b61b72154d4",
+        path="libsodium"
+    )
     add_idf_component(
         name="esp_hap_core",
         repo="https://github.com/rednblkx/esp-homekit-sdk",
