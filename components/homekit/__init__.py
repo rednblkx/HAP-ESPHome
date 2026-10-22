@@ -1,7 +1,7 @@
 from esphome import automation
 import esphome.codegen as cg
 import esphome.config_validation as cv
-from esphome.components import mdns, wifi, light, lock, sensor, switch, climate, pn532, fan
+from esphome.components import mdns, wifi, light, lock, sensor, switch, climate, pn532, fan, esp32
 from esphome.const import PLATFORM_ESP32, CONF_ID, CONF_TRIGGER_ID
 from esphome.core import ID, Lambda
 from esphome.components.esp32 import add_idf_component
@@ -105,6 +105,10 @@ async def to_code(config):
                 cg.add(var.set_nfc_ctx(nfc))
                 cg.add(var.set_hk_hw_finish(l["hk_hw_finish"]))
                 cg.add_define("USE_HOMEKEY")
+                if hasattr(esp32, "require_mbedtls_tls_extras"):  # ESPHome 2026.10+ trims mbedTLS
+                    # HK-HomeKit-Lib signs with deterministic ECDSA on P-256
+                    esp32.require_mbedtls_ecp()
+                    esp32.require_mbedtls_tls_extras(["CONFIG_MBEDTLS_ECDSA_DETERMINISTIC"])
                 add_idf_component(
                     name="HK-HomeKit-Lib",
                     repo="https://github.com/rednblkx/HK-HomeKit-Lib.git",
