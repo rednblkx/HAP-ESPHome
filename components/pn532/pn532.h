@@ -23,6 +23,11 @@ static const uint8_t PN532_COMMAND_INLISTPASSIVETARGET = 0x4A;
 static const uint8_t PN532_COMMAND_POWERDOWN = 0x16;
 
 static const uint8_t PN532_IC_VERSION = 0x32;
+// After this many consecutive failed ECP steps polling skips ahead to InListPassiveTarget.
+static const uint16_t PN532_ECP_MAX_FAILURES = 3;
+// Warn after this many consecutive failed tag polls, and again every ..._REPEAT failures.
+static const uint32_t PN532_POLL_FAILURES_WARN = 10;
+static const uint32_t PN532_POLL_FAILURES_REPEAT = 600;
 // RFConfiguration items / values (UM0701-02 7.3.1)
 static const uint8_t PN532_RFCFG_FIELD = 0x01;
 static const uint8_t PN532_RFCFG_MAX_RETRIES = 0x05;
@@ -68,9 +73,15 @@ class PN532 : public PollingComponent {
   void format_mode();
   void write_mode(nfc::NdefMessage *message);
   bool powerdown();
+  /// Wake the chip after powerdown(), re-initialise it and resume tag polling.
+  bool wakeup();
 
  protected:
   bool init_chip_();
+  /// Wake the chip from power-down (interface specific, e.g. an SPI NSS falling edge).
+  virtual void wake_chip_() {}
+  void poll_command_failed_(const char *what);
+  void ecp_step_failed_();
   bool rf_configure_(const std::vector<uint8_t> &config);
   bool turn_off_rf_();
   bool write_command_(const std::vector<uint8_t> &data);
@@ -115,6 +126,10 @@ class PN532 : public PollingComponent {
   bool target_still_present{ false };
   bool requested_ecp_{ false };
   uint8_t ic_version_{0};
+  uint16_t ecp_failures_{0};      // consecutive ECP steps without an answer
+  uint32_t poll_failures_{0};     // consecutive InListPassiveTarget polls without a valid answer
+  uint16_t command_failures_{0};  // consecutive poll commands that were not ACKed
+  uint32_t last_poll_ok_{0};      // millis() of the last successfully parsed InListPassiveTarget response
   int next_flow_{ 0 };
   std::vector<PN532BinarySensor *> binary_sensors_;
   std::vector<nfc::NfcOnTagTrigger *> triggers_ontag_;

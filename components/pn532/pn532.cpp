@@ -127,15 +127,17 @@ bool PN532::init_chip_() {
 }
 
 bool PN532::powerdown() {
-  updates_enabled_ = false;
-  requested_read_ = false;
+  this->updates_enabled_ = false;
+  this->requested_read_ = false;
+  this->requested_ecp_ = false;
+  this->next_flow_ = 0;
   ESP_LOGI(TAG, "Powering down PN532");
   if (!this->write_command_({PN532_COMMAND_POWERDOWN, 0b10100000})) {  // enable i2c,spi wakeup
     ESP_LOGE(TAG, "Error writing powerdown command to PN532");
     return false;
   }
   std::vector<uint8_t> response;
-  if (!this->read_response(PN532_COMMAND_POWERDOWN, response)) {
+  if (!this->read_response(PN532_COMMAND_POWERDOWN, response) || response.empty()) {
     ESP_LOGE(TAG, "Error reading PN532 powerdown response");
     return false;
   }
@@ -148,9 +150,49 @@ bool PN532::powerdown() {
   return true;
 }
 
+bool PN532::wakeup() {
+  ESP_LOGI(TAG, "Waking up PN532");
+  this->wake_chip_();
+  bool ok = this->init_chip_();
+  if (!ok) {
+    ESP_LOGW(TAG, "PN532 re-initialisation after wake-up failed");
+    this->status_set_warning();
+  }
+  // Resume polling even if init failed, so the failure stays visible and is retried.
+  this->updates_enabled_ = true;
+  return ok;
+}
+
+void PN532::poll_command_failed_(const char *what) {
+  ESP_LOGW(TAG, "%s", what);
+  this->status_set_warning();
+  if (this->command_failures_ < UINT16_MAX)
+    this->command_failures_++;
+}
+
+void PN532::ecp_step_failed_() {
+  // Without this the ECP state machine stays in the same phase forever when the
+  // chip stops answering it, and InListPassiveTarget is never sent again.
+  if (this->ecp_failures_ < UINT16_MAX)
+    this->ecp_failures_++;
+  if (this->ecp_failures_ >= PN532_ECP_MAX_FAILURES) {
+    if (this->ecp_failures_ == PN532_ECP_MAX_FAILURES)
+      ESP_LOGW(TAG, "ECP step %d failed %u times in a row, continuing with tag polling", this->next_flow_,
+               this->ecp_failures_);
+    this->next_flow_ = 2;
+  }
+}
+
 void PN532::update() {
-  if (!updates_enabled_)
+  if (!this->updates_enabled_)
     return;
+
+  // Never start a new command while the previous one is still being answered;
+  // the second frame would interleave with the first response.
+  if (this->requested_read_ || this->requested_ecp_) {
+    ESP_LOGV(TAG, "Previous request still pending, skipping this poll");
+    return;
+  }
 
   for (auto *obj : this->binary_sensors_)
     obj->on_scan_end();
@@ -164,10 +206,11 @@ void PN532::update() {
               0x633d & 0xFF,
               0x0
         })) {
-        ESP_LOGW(TAG, "Setting 8bit TX failed!");
-        this->status_set_warning();
+        this->poll_command_failed_("Setting 8bit TX failed!");
+        this->ecp_step_failed_();
         return;
       }
+      this->command_failures_ = 0;
       this->status_clear_warning();
       this->requested_ecp_ = true;
       return;
@@ -176,10 +219,11 @@ void PN532::update() {
       std::vector<uint8_t> frame_send{ PN532_COMMAND_INCOMMUNICATETHRU };
       frame_send.insert(frame_send.end(), ecp_frame.begin(), ecp_frame.end());
       if (!this->write_command_(frame_send)) {
-        ESP_LOGW(TAG, "Sending ECP Frame failed!");
-        this->status_set_warning();
+        this->poll_command_failed_("Sending ECP Frame failed!");
+        this->ecp_step_failed_();
         return;
       }
+      this->command_failures_ = 0;
       this->status_clear_warning();
       this->requested_ecp_ = true;
       return;
@@ -192,49 +236,34 @@ void PN532::update() {
           0x01,  // max 1 card
           0x00,  // baud rate ISO14443A (106 kbit/s)
       })) {
-    ESP_LOGW(TAG, "Requesting tag read failed!");
-    this->status_set_warning();
+    this->poll_command_failed_("Requesting tag read failed!");
+    this->next_flow_ = 0;
     return;
   }
+  this->command_failures_ = 0;
   this->status_clear_warning();
   this->requested_read_ = true;
 }
 
 void PN532::loop() {
   // Enhanced Contactless Polling sequence
-  if (this->next_flow_ == 0 && this->requested_ecp_) {
+  if (this->requested_ecp_ && (this->next_flow_ == 0 || this->next_flow_ == 1)) {
     auto ready = this->read_ready_(false);
     if (ready == WOULDBLOCK)
       return;
 
-    bool success = false;
-    std::vector<uint8_t> read;
-
     if (ready == READY) {
-      success = this->read_response(PN532_COMMAND_WRITEREGISTER, read);
+      std::vector<uint8_t> read;
+      this->read_response(this->next_flow_ == 0 ? PN532_COMMAND_WRITEREGISTER : PN532_COMMAND_INCOMMUNICATETHRU,
+                          read);
       ESP_LOGV(TAG, "ECP: %s", format_hex(read).c_str());
-      this->next_flow_ = 1;
-    }
-    else {
-      this->send_ack_();
-    }
-    this->requested_ecp_ = false;
-    return;
-  } else if (this->next_flow_ == 1 && this->requested_ecp_) {
-    auto ready = this->read_ready_(false);
-    if (ready == WOULDBLOCK)
-      return;
-
-    bool success = false;
-    std::vector<uint8_t> read;
-
-    if (ready == READY) {
-      success = this->read_response(PN532_COMMAND_INCOMMUNICATETHRU, read);
-      ESP_LOGV(TAG, "ECP: %s", format_hex(read).c_str());
-      this->next_flow_ = 2;
-    }
-    else {
-      this->send_ack_();
+      if (this->ecp_failures_ >= PN532_ECP_MAX_FAILURES)
+        ESP_LOGI(TAG, "ECP step %d answered again", this->next_flow_);
+      this->ecp_failures_ = 0;
+      this->next_flow_++;
+    } else {
+      this->send_ack_();  // abort the step that never became ready
+      this->ecp_step_failed_();
     }
     this->requested_ecp_ = false;
     return;
@@ -251,12 +280,26 @@ void PN532::loop() {
   std::vector<uint8_t> read;
 
   if (ready == READY) {
-    success = this->read_response(PN532_COMMAND_INLISTPASSIVETARGET, read);
+    success = this->read_response(PN532_COMMAND_INLISTPASSIVETARGET, read) && !read.empty();
   } else {
     this->send_ack_();  // abort still running InListPassiveTarget
   }
 
   this->requested_read_ = false;
+
+  if (success) {
+    this->last_poll_ok_ = millis();
+    if (this->poll_failures_ >= PN532_POLL_FAILURES_WARN)
+      ESP_LOGI(TAG, "Tag polling answered again after %" PRIu32 " failed polls", this->poll_failures_);
+    this->poll_failures_ = 0;
+  } else {
+    // An error frame, a garbage frame or no answer at all used to be
+    // indistinguishable from "no tag" at DEBUG level.
+    this->poll_failures_++;
+    if (this->poll_failures_ == PN532_POLL_FAILURES_WARN || this->poll_failures_ % PN532_POLL_FAILURES_REPEAT == 0)
+      ESP_LOGW(TAG, "Tag polling failed %" PRIu32 " times in a row (last: %s)", this->poll_failures_,
+               ready == READY ? "error or invalid frame" : "no answer");
+  }
 
   if (!success) {
     // Something failed
@@ -294,11 +337,14 @@ void PN532::loop() {
     this->target_still_present = true;
   }
 
-  uint8_t nfcid_length = read[5];
-  if (nfcid_length > nfc::NFC_UID_MAX_LENGTH || read.size() < 6U + nfcid_length) {
+  if (read.size() < 6U || read[5] > nfc::NFC_UID_MAX_LENGTH || read.size() < 6U + read[5]) {
     // oops, pn532 returned invalid data
+    ESP_LOGW(TAG, "Invalid InListPassiveTarget response: %s", format_hex_pretty(read).c_str());
+    this->target_still_present = false;
+    this->next_flow_ = 0;
     return;
   }
+  uint8_t nfcid_length = read[5];
   nfc::NfcTagUid nfcid(read.begin() + 6, read.begin() + 6 + nfcid_length);
 
   bool report = true;

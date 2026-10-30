@@ -23,6 +23,14 @@ void PN532Spi::setup() {
   PN532::setup();
 }
 
+void PN532Spi::wake_chip_() {
+  // A falling edge on NSS wakes the PN532 from power-down; hold it low >= 2 ms.
+  this->enable();
+  delay(2);
+  this->disable();
+  delay(10);
+}
+
 bool PN532Spi::is_read_ready() {
   this->enable();
   this->write_byte(0x02);
