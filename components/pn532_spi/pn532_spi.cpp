@@ -31,6 +31,12 @@ void PN532Spi::wake_chip_() {
   delay(10);
 }
 
+void PN532Spi::set_bus_power_off_(bool off) {
+  // An idle-high CS line can back-feed an unpowered PN532 through its protection
+  // diodes and keep it from fully resetting. CLK idles low in SPI mode 0.
+  this->cs_->digital_write(!off);
+}
+
 bool PN532Spi::is_read_ready() {
   this->enable();
   this->write_byte(0x02);
