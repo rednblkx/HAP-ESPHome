@@ -22,6 +22,13 @@ static const uint8_t PN532_COMMAND_WRITEREGISTER = 0x08;
 static const uint8_t PN532_COMMAND_INLISTPASSIVETARGET = 0x4A;
 static const uint8_t PN532_COMMAND_POWERDOWN = 0x16;
 
+static const uint8_t PN532_IC_VERSION = 0x32;
+// RFConfiguration items / values (UM0701-02 7.3.1)
+static const uint8_t PN532_RFCFG_FIELD = 0x01;
+static const uint8_t PN532_RFCFG_MAX_RETRIES = 0x05;
+static const uint8_t PN532_RF_FIELD_ON = 0x01;
+static const uint8_t PN532_RF_AUTO_RFCA = 0x02;
+
 enum PN532ReadReady {
   WOULDBLOCK = 0,
   TIMEOUT,
@@ -63,7 +70,9 @@ class PN532 : public PollingComponent {
   bool powerdown();
 
  protected:
-  void turn_off_rf_();
+  bool init_chip_();
+  bool rf_configure_(const std::vector<uint8_t> &config);
+  bool turn_off_rf_();
   bool write_command_(const std::vector<uint8_t> &data);
   bool read_ack_();
   void send_ack_();
@@ -105,6 +114,7 @@ class PN532 : public PollingComponent {
   bool requested_read_{ false };
   bool target_still_present{ false };
   bool requested_ecp_{ false };
+  uint8_t ic_version_{0};
   int next_flow_{ 0 };
   std::vector<PN532BinarySensor *> binary_sensors_;
   std::vector<nfc::NfcOnTagTrigger *> triggers_ontag_;
@@ -123,6 +133,8 @@ class PN532 : public PollingComponent {
     NONE = 0,
     WAKEUP_FAILED,
     SAM_COMMAND_FAILED,
+    VERSION_FAILED,
+    RF_CONFIG_FAILED,
   } error_code_{NONE};
   CallbackManager<void()> on_finished_write_callback_;
 };

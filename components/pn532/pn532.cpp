@@ -17,22 +17,43 @@ static const char *const TAG = "pn532";
 void PN532::setup() {
   ESP_LOGCONFIG(TAG, "Running setup");
 
-  // Get version data
-  if (!this->write_command_({PN532_COMMAND_VERSION_DATA})) {
-    ESP_LOGW(TAG, "Error sending version command, trying again");
-    if (!this->write_command_({PN532_COMMAND_VERSION_DATA})) {
-      ESP_LOGE(TAG, "Error sending version command");
-      this->mark_failed();
-      return;
-    }
-  }
-
-  std::vector<uint8_t> version_data;
-  if (!this->read_response(PN532_COMMAND_VERSION_DATA, version_data)) {
-    ESP_LOGE(TAG, "Error getting version");
+  if (!this->init_chip_()) {
     this->mark_failed();
     return;
   }
+}
+
+bool PN532::init_chip_() {
+  // Forget any half-finished readiness wait from before.
+  this->rd_start_time_.reset();
+  this->rd_ready_ = WOULDBLOCK;
+
+  // An ACK frame sent by the host aborts whatever command the PN532 may still be
+  // processing (UM0701-02 6.2.1.3), so we start from a known idle state even if
+  // the chip was left mid-command (e.g. after an ESP software restart).
+  this->send_ack_();
+
+  // Get version data
+  std::vector<uint8_t> version_data;
+  bool got_version = false;
+  for (uint8_t attempt = 0; attempt < 2 && !got_version; attempt++) {
+    version_data.clear();
+    if (!this->write_command_({PN532_COMMAND_VERSION_DATA})) {
+      ESP_LOGW(TAG, "Error sending version command%s", attempt == 0 ? ", trying again" : "");
+      continue;
+    }
+    got_version = this->read_response(PN532_COMMAND_VERSION_DATA, version_data) && version_data.size() >= 3;
+    if (!got_version)
+      ESP_LOGW(TAG, "Error getting version%s", attempt == 0 ? ", trying again" : "");
+  }
+  if (!got_version) {
+    ESP_LOGE(TAG, "No version response from PN532");
+    this->error_code_ = VERSION_FAILED;
+    return false;
+  }
+  if (version_data[0] != PN532_IC_VERSION)
+    ESP_LOGW(TAG, "Unexpected IC version 0x%02X (expected 0x%02X)", version_data[0], PN532_IC_VERSION);
+  this->ic_version_ = version_data[0];
   ESP_LOGD(TAG, "Found chip PN5%02X, Firmware v%d.%d", version_data[0], version_data[1], version_data[2]);
 
   if (!this->write_command_({
@@ -42,15 +63,14 @@ void PN532::setup() {
           0x01,
       })) {
     ESP_LOGE(TAG, "No wakeup ack");
-    this->mark_failed();
-    return;
+    this->error_code_ = WAKEUP_FAILED;
+    return false;
   }
 
   std::vector<uint8_t> wakeup_result;
   if (!this->read_response(PN532_COMMAND_SAMCONFIGURATION, wakeup_result)) {
     this->error_code_ = WAKEUP_FAILED;
-    this->mark_failed();
-    return;
+    return false;
   }
 
   // Set up SAM (secure access module)
@@ -62,8 +82,7 @@ void PN532::setup() {
           0x01,         // Enable IRQ
       })) {
     this->error_code_ = SAM_COMMAND_FAILED;
-    this->mark_failed();
-    return;
+    return false;
   }
 
   std::vector<uint8_t> sam_result;
@@ -73,35 +92,38 @@ void PN532::setup() {
       ESP_LOGV(TAG, " 0x%02X", dat);
     }
     this->error_code_ = SAM_COMMAND_FAILED;
-    this->mark_failed();
-    return;
+    return false;
   }
 
-  // Set up Passive Activation Tries to 0
-  if (!this->write_command_({
-          PN532_COMMAND_RFCONFIGURATION,
-          0x05,
-          0xFF,
-          0x01,
-          0x0
-    })) {
+  // Cycle the RF field once (off, settle, on) so the CIU antenna drivers are
+  // re-armed explicitly, and enable Auto RFCA like HomeKey-ESP32 v0.8 does
+  // (RFConfiguration item 1 = 0x03: AutoRFCA + RF on).
+  if (!this->rf_configure_({PN532_RFCFG_FIELD, 0x00})) {
+    ESP_LOGE(TAG, "Error switching RF field off");
+    this->error_code_ = RF_CONFIG_FAILED;
+    return false;
+  }
+  delay(10);
+  if (!this->rf_configure_({PN532_RFCFG_FIELD, PN532_RF_AUTO_RFCA | PN532_RF_FIELD_ON})) {
+    ESP_LOGE(TAG, "Error switching RF field on");
+    this->error_code_ = RF_CONFIG_FAILED;
+    return false;
+  }
+
+  // Set up Passive Activation Tries to 0 (MxRtyATR 0xFF, MxRtyPSL 0x01, MxRtyPassiveActivation 0x00)
+  if (!this->rf_configure_({PN532_RFCFG_MAX_RETRIES, 0xFF, 0x01, 0x00})) {
+    ESP_LOGE(TAG, "Error setting passive activation retries");
     this->error_code_ = WAKEUP_FAILED;
-    this->mark_failed();
-    return;
+    return false;
   }
 
-  std::vector<uint8_t> rf_conf;
-  if (!this->read_response(PN532_COMMAND_RFCONFIGURATION, rf_conf)) {
-    ESP_LOGV(TAG, "Invalid RF CONF result: (%u)", rf_conf.size());  // NOLINT
-    for (uint8_t dat : rf_conf) {
-      ESP_LOGV(TAG, " 0x%02X", dat);
-    }
-    this->error_code_ = WAKEUP_FAILED;
-    this->mark_failed();
-    return;
+  if (!this->turn_off_rf_()) {
+    this->error_code_ = RF_CONFIG_FAILED;
+    return false;
   }
 
-  this->turn_off_rf_();
+  this->error_code_ = NONE;
+  return true;
 }
 
 bool PN532::powerdown() {
@@ -479,13 +501,25 @@ enum PN532ReadReady PN532::read_ready_(bool block) {
   return rdy;
 }
 
-void PN532::turn_off_rf_() {
+bool PN532::rf_configure_(const std::vector<uint8_t> &config) {
+  std::vector<uint8_t> command{PN532_COMMAND_RFCONFIGURATION};
+  command.insert(command.end(), config.begin(), config.end());
+  if (!this->write_command_(command))
+    return false;
+  // Always consume the response frame; leaving it unread makes the next
+  // command's readiness check see this stale frame instead.
+  std::vector<uint8_t> response;
+  return this->read_response(PN532_COMMAND_RFCONFIGURATION, response);
+}
+
+bool PN532::turn_off_rf_() {
   ESP_LOGV(TAG, "Turning RF field OFF");
-  this->write_command_({
-      PN532_COMMAND_RFCONFIGURATION,
-      0x01,  // RF Field
-      0x00,  // Off
-  });
+  // Field off, keep Auto RFCA enabled.
+  if (!this->rf_configure_({PN532_RFCFG_FIELD, PN532_RF_AUTO_RFCA})) {
+    ESP_LOGW(TAG, "Error turning RF field off");
+    return false;
+  }
+  return true;
 }
 
 std::unique_ptr<nfc::NfcTag> PN532::read_tag_(nfc::NfcTagUid &uid) {
@@ -566,6 +600,12 @@ void PN532::dump_config() {
       break;
     case SAM_COMMAND_FAILED:
       ESP_LOGE(TAG, "SAM command failed!");
+      break;
+    case VERSION_FAILED:
+      ESP_LOGE(TAG, "No firmware version response!");
+      break;
+    case RF_CONFIG_FAILED:
+      ESP_LOGE(TAG, "RF configuration failed!");
       break;
   }
 
