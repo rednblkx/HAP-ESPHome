@@ -16,6 +16,8 @@ MULTI_CONF = True
 
 CONF_PN532_ID = "pn532_id"
 
+# ESPHome 2026.10+ passes the tag to on_tag/on_tag_removed as "const NfcTag &"
+NFC_TAG_ARG = getattr(nfc, "NfcTagConstRef", nfc.NfcTag)
 pn532_ns = cg.esphome_ns.namespace("pn532")
 PN532 = pn532_ns.class_("PN532", cg.PollingComponent)
 
@@ -63,14 +65,14 @@ async def setup_pn532(var, config):
         trigger = cg.new_Pvariable(conf[CONF_TRIGGER_ID])
         cg.add(var.register_ontag_trigger(trigger))
         await automation.build_automation(
-            trigger, [(cg.std_string, "x"), (nfc.NfcTag, "tag")], conf
+            trigger, [(cg.std_string, "x"), (NFC_TAG_ARG, "tag")], conf
         )
 
     for conf in config.get(CONF_ON_TAG_REMOVED, []):
         trigger = cg.new_Pvariable(conf[CONF_TRIGGER_ID])
         cg.add(var.register_ontagremoved_trigger(trigger))
         await automation.build_automation(
-            trigger, [(cg.std_string, "x"), (nfc.NfcTag, "tag")], conf
+            trigger, [(cg.std_string, "x"), (NFC_TAG_ARG, "tag")], conf
         )
 
     await automation.build_callback_automations(var, config, _CALLBACK_AUTOMATIONS)
