@@ -5,6 +5,13 @@ from esphome.core import CORE
 from esphome.components.esp32 import add_idf_component, add_idf_sdkconfig_option
 from pathlib import Path
 import re
+from esphome.coroutine import CoroPriority, coroutine_with_priority
+
+# Local stand-in component (directory name "libsodium") that forwards to Espressif's
+# full libsodium port, see libsodium/CMakeLists.txt
+LIBSODIUM_SHIM_PATH = str(Path(__file__).parent / "libsodium")
+# Every name under which a libsodium dependency reaches the build
+LIBSODIUM_NAMES = ("esphome/libsodium", "espressif/libsodium", "libsodium")
 
 DEPENDENCIES = ['esp32', 'network', 'mdns']
 CODEOWNERS = ["@rednblkx"]
@@ -52,7 +59,10 @@ async def to_code(config):
         cg.add_platformio_option("lib_ignore", ["libsodium"])
     # Every */libsodium dependency resolves to this local "libsodium", so ESPHome 2026.10's
     # esphome/libsodium (api/ota encryption) and espressif/libsodium no longer collide
-    add_idf_component(name="libsodium", path=str(Path(__file__).parent / "libsodium"))
+    add_idf_component(name="libsodium", path=LIBSODIUM_SHIM_PATH)
+    # Runs after every component's to_code, so it also catches the esphome/libsodium
+    # entry that the noise component adds, whatever order the components load in
+    CORE.add_job(_unify_libsodium)
     # Espressif's full port (1.0.22~1) behind it, as HomeKit pairing needs Ed25519 signing;
     # from git, since a registry */libsodium dependency would resolve to the local one again
     add_idf_component(
@@ -107,3 +117,25 @@ async def to_code(config):
     add_idf_sdkconfig_option("CONFIG_MBEDTLS_HKDF_C", True)
     add_idf_sdkconfig_option("CONFIG_LWIP_MAX_SOCKETS", 16)
     await cg.register_component(var, config)
+
+def _set_idf_component_path(name, path):
+    """Point an IDF component at a local path, replacing a registry/git entry quietly."""
+    try:
+        from esphome.const import KEY_ESP32
+        from esphome.components.esp32.const import (
+            KEY_COMPONENTS, KEY_PATH, KEY_REF, KEY_REPO,
+        )
+        registry = CORE.data[KEY_ESP32][KEY_COMPONENTS]
+    except (ImportError, KeyError):
+        add_idf_component(name=name, path=path)
+        return
+    registry[name] = {KEY_REPO: None, KEY_REF: None, KEY_PATH: path}
+
+
+@coroutine_with_priority(CoroPriority.LATE)
+async def _unify_libsodium():
+    # The IDF component manager refuses to build when two components share the short
+    # name "libsodium". Declare every name as a root-level local dependency on the same
+    # directory, so ESP-IDF registers exactly one component "libsodium".
+    for name in LIBSODIUM_NAMES:
+        _set_idf_component_path(name, LIBSODIUM_SHIM_PATH)
