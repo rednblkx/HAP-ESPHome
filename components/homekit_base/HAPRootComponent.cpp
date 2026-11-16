@@ -61,8 +61,8 @@ namespace esphome
                 .manufacturer = strdup(accessory_info[MANUFACTURER]),
                 .serial_num = strdup(accessory_info[SN]),
                 .fw_rev = strdup(accessory_info[FW_REV]),
-                .hw_rev = "1.0",
-                .pv = "1.1.0",
+                .hw_rev = (char *)"1.0",
+				.pv = (char *)"1.1.0",
                 .cid = HAP_CID_BRIDGE,
                 .identify_routine = acc_identify,
             };
