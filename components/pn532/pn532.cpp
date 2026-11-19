@@ -3,6 +3,9 @@
 #include <memory>
 #include "esphome/core/log.h"
 #include "esphome/core/hal.h"
+#if __has_include("esphome/core/alloc_helpers.h")
+#include "esphome/core/alloc_helpers.h"  // format_hex()
+#endif
 
 // Based on:
 // - https://cdn-shop.adafruit.com/datasheets/PN532C106_Application+Note_v1.2.pdf

@@ -1,5 +1,8 @@
 #include "pn532_spi.h"
 #include "esphome/core/helpers.h"
+#if __has_include("esphome/core/alloc_helpers.h")
+#include "esphome/core/alloc_helpers.h"  // format_hex_pretty()
+#endif
 #include "esphome/core/log.h"
 
 // Based on:
