@@ -1,6 +1,9 @@
 #include <esphome/core/defines.h>
 #ifdef USE_LOCK
 #include "lock.h"
+#if __has_include(<esphome/core/alloc_helpers.h>)
+#include <esphome/core/alloc_helpers.h>  // format_hex_pretty()
+#endif
 #include <mbedtls/sha1.h>
 #include <mbedtls/sha256.h>
 
