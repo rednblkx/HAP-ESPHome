@@ -18,13 +18,13 @@ namespace esphome
       fan::Fan* fanPtr;
       static int fanwrite(hap_write_data_t write_data[], int count, void* serv_priv, void* write_priv) {
         fan::Fan* fanPtr = (fan::Fan*)serv_priv;
-        ESP_LOGD(TAG, "Write called for Accessory %s (%s)", std::to_string(fanPtr->get_object_id_hash()).c_str(), fanPtr->get_name().c_str());
+        ESP_LOGD(TAG, "Write called for Accessory %s (%s)", std::to_string(fanPtr->get_object_id_hash()).c_str(), entity_name(fanPtr).c_str());
         int i, ret = HAP_SUCCESS;
         hap_write_data_t* write;
         for (i = 0; i < count; i++) {
           write = &write_data[i];
           if (!strcmp(hap_char_get_type_uuid(write->hc), HAP_CHAR_UUID_ON)) {
-            ESP_LOGD(TAG, "Received Write for fan '%s' -> %s", fanPtr->get_name().c_str(), write->val.b ? "On" : "Off");
+            ESP_LOGD(TAG, "Received Write for fan '%s' -> %s", entity_name(fanPtr).c_str(), write->val.b ? "On" : "Off");
             ESP_LOGD(TAG, "[STATE] CURRENT STATE: %d", fanPtr->state);
             fanPtr->make_call().set_state(write->val.b).perform();
             hap_char_update_val(write->hc, &(write->val));
@@ -37,7 +37,7 @@ namespace esphome
         return ret;
       }
       static void on_fanupdate(fan::Fan* obj) {
-        ESP_LOGD(TAG, "%s state: %s", obj->get_name().c_str(), ONOFF(obj->state));
+        ESP_LOGD(TAG, "%s state: %s", entity_name(obj).c_str(), ONOFF(obj->state));
         hap_acc_t* acc = hap_acc_get_by_aid(hap_get_unique_aid(std::to_string(obj->get_object_id_hash()).c_str()));
         if (acc) {
           hap_serv_t* hs = hap_acc_get_serv_by_uuid(acc, HAP_SERV_UUID_FAN);
@@ -65,7 +65,7 @@ namespace esphome
         };
         hap_acc_t* accessory = nullptr;
         hap_serv_t* service = nullptr;
-        std::string accessory_name = fanPtr->get_name();
+        std::string accessory_name = entity_name(fanPtr);
         if (accessory_info[NAME] == NULL) {
           acc_cfg.name = strdup(accessory_name.c_str());
         }

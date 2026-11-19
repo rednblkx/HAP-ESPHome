@@ -18,7 +18,7 @@ namespace esphome
       static constexpr const char* TAG = "SensorEntity";
       sensor::Sensor* sensorPtr;
       static void on_sensor_update(sensor::Sensor* obj, float v) {
-        ESP_LOGD(TAG, "%s value: %.2f", obj->get_name().c_str(), v);
+        ESP_LOGD(TAG, "%s value: %.2f", entity_name(obj).c_str(), v);
         hap_acc_t* acc = hap_acc_get_by_aid(hap_get_unique_aid(std::to_string(obj->get_object_id_hash()).c_str()));
         if (acc) {
           hap_serv_t* hs = hap_serv_get_next(hap_acc_get_first_serv(acc));
@@ -39,7 +39,7 @@ namespace esphome
       static int sensor_read(hap_char_t* hc, hap_status_t* status_code, void* serv_priv, void* read_priv) {
         if (serv_priv) {
           sensor::Sensor* sensorPtr = (sensor::Sensor*)serv_priv;
-          ESP_LOGD(TAG, "Read called for Accessory %s (%s)", std::to_string(sensorPtr->get_object_id_hash()).c_str(), sensorPtr->get_name().c_str());
+          ESP_LOGD(TAG, "Read called for Accessory %s (%s)", std::to_string(sensorPtr->get_object_id_hash()).c_str(), entity_name(sensorPtr).c_str());
           hap_val_t sensorValue;
           float v = sensorPtr->get_state();
           if (ceilf(v) == v) {
@@ -99,7 +99,7 @@ namespace esphome
               .identify_routine = acc_identify,
           };
           hap_acc_t* accessory = nullptr;
-          std::string accessory_name = sensorPtr->get_name();
+          std::string accessory_name = entity_name(sensorPtr);
           if (accessory_info[NAME] == NULL) {
             acc_cfg.name = strdup(accessory_name.c_str());
           }

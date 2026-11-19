@@ -166,7 +166,7 @@ void LockEntity::hap_event_handler(hap_event_t event, void *data) {
 #endif
 
 void LockEntity::on_lock_update(lock::Lock *obj) {
-  ESP_LOGD("on_lock_update", "%s state: %s", obj->get_name().c_str(),
+  ESP_LOGD("on_lock_update", "%s state: %s", entity_name(obj).c_str(),
            LOG_STR_ARG(lock_state_to_string(obj->state)));
   hap_acc_t *acc = hap_acc_get_by_aid(
       hap_get_unique_aid(std::to_string(obj->get_object_id_hash()).c_str()));
@@ -198,7 +198,7 @@ int LockEntity::lock_write(hap_write_data_t write_data[], int count,
                            void *serv_priv, void *write_priv) {
   lock::Lock *lockPtr = (lock::Lock *)serv_priv;
   ESP_LOGD("lock_write", "Write called for Accessory '%s'(%s)",
-           lockPtr->get_name().c_str(),
+           entity_name(lockPtr).c_str(),
            std::to_string(lockPtr->get_object_id_hash()).c_str());
   int i, ret = HAP_SUCCESS;
   hap_write_data_t *write;
@@ -403,7 +403,7 @@ void LockEntity::setup() {
   };
   hap_acc_t *accessory = nullptr;
   hap_serv_t *lockMechanism = nullptr;
-  std::string accessory_name = ptrToLock->get_name();
+  std::string accessory_name = entity_name(ptrToLock);
   if (accessory_info[NAME] == NULL) {
     acc_cfg.name = strdup(accessory_name.c_str());
   } else {

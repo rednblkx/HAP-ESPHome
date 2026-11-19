@@ -19,7 +19,7 @@ namespace esphome
       static constexpr const char* TAG = "ClimateEntity";
       climate::Climate* climatePtr;
       static void on_climate_update(climate::Climate& obj) {
-        ESP_LOGI(TAG, "%s Mode: %d Action: %d CTemp: %.2f TTemp: %.2f CHum: %.2f THum: %.2f", obj.get_name().c_str(), obj.mode, obj.action, obj.current_temperature, obj.target_temperature, obj.current_humidity, obj.target_humidity);
+        ESP_LOGI(TAG, "%s Mode: %d Action: %d CTemp: %.2f TTemp: %.2f CHum: %.2f THum: %.2f", entity_name(&obj).c_str(), obj.mode, obj.action, obj.current_temperature, obj.target_temperature, obj.current_humidity, obj.target_humidity);
         hap_acc_t* acc = hap_acc_get_by_aid(hap_get_unique_aid(std::to_string(obj.get_object_id_hash()).c_str()));
         if (acc) {
           hap_serv_t* hs = hap_acc_get_serv_by_uuid(acc, HAP_SERV_UUID_THERMOSTAT);
@@ -139,7 +139,7 @@ namespace esphome
         hap_acc_t* accessory = nullptr;
         hap_serv_t* service = nullptr;
         hap_serv_t* service_fan = nullptr;
-        std::string accessory_name = this->climatePtr->get_name();
+        std::string accessory_name = entity_name(this->climatePtr);
         acc_cfg.name = accessory_name.data();
         acc_cfg.serial_num = std::to_string(this->climatePtr->get_object_id_hash()).data();
         climate::ClimateTraits climateTraits = this->climatePtr->get_traits();
