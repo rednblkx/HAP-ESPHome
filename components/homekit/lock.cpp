@@ -15,7 +15,7 @@ namespace homekit {
 namespace hk_compat {
 inline std::string bufToHexString(const uint8_t *buf, size_t len,
                                   bool ignoreLevel = false) {
-  return format_hex_pretty(buf, len);
+  return pn532::hex_pretty_str(buf, len);
 }
 inline std::vector<uint8_t> getHashIdentifier(const uint8_t *key, size_t len,
                                               bool sha256) {
@@ -352,7 +352,7 @@ void LockEntity::set_nfc_ctx(pn532::PN532 *ctx) {
             return false;
           }
           data.erase(data.begin());
-          ESP_LOGD(TAG, "%s", format_hex_pretty(data).c_str());
+          ESP_LOGD(TAG, "%s", pn532::hex_pretty_str(data).c_str());
           recv = std::move(data);
           return true;
         };
@@ -361,7 +361,7 @@ void LockEntity::set_nfc_ctx(pn532::PN532 *ctx) {
                                  0x08, 0x58, 0x01, 0x01, 0x0});
         if (versions.size() > 0) {
           ESP_LOGD(TAG, "HK SUPPORTED VERSIONS: %s",
-                   format_hex_pretty(versions).c_str());
+                   pn532::hex_pretty_str(versions).c_str());
           if (versions.data()[versions.size() - 2] == 0x90 &&
               versions.data()[versions.size() - 1] == 0x0) {
             HKAuthenticationContext authCtx(lambda, readerData, savedHKdata);

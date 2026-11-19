@@ -122,7 +122,7 @@ bool PN532Spi::read_response(uint8_t command, std::vector<uint8_t> &data) {
     ESP_LOGV(TAG, "Abnormal length and checksum, possible Extended Frame");
     header.resize(10);
     this->read_array(header.data() + 7, 3);
-    ESP_LOGV(TAG, "EF: Header data: %s", format_hex_pretty(header).c_str());
+    ESP_LOGV(TAG, "EF: Header data: %s", pn532::hex_pretty_str(header).c_str());
     if ((uint8_t)(header[5] + header[6] + header[7]) != 0) {
       ESP_LOGV(TAG, "EF: read data invalid header!");
       this->disable();

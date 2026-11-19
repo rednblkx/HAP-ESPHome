@@ -2,6 +2,7 @@
 
 #include "esphome/core/component.h"
 #include "esphome/core/automation.h"
+#include "esphome/core/helpers.h"
 #include "esphome/components/binary_sensor/binary_sensor.h"
 #include "esphome/components/nfc/nfc_tag.h"
 #include "esphome/components/nfc/nfc.h"
@@ -12,6 +13,24 @@
 
 namespace esphome {
 namespace pn532 {
+	
+// ESPHome 2026.11 removed the std::string returning format_hex()/format_hex_pretty();
+// these wrap the buffer based *_to() variants that exist since 2026.10.
+inline std::string hex_str(const std::vector<uint8_t> &data) {
+  std::string out(data.size() * 2 + 1, '\0');
+  format_hex_to(&out[0], out.size(), data.data(), data.size());
+  out.resize(data.size() * 2);
+  return out;
+}
+inline std::string hex_pretty_str(const uint8_t *data, size_t len) {
+  if (len == 0)
+    return {};
+  std::string out(len * 3, '\0');
+  format_hex_pretty_to(&out[0], out.size(), data, len);
+  out.resize(len * 3 - 1);
+  return out;
+}
+inline std::string hex_pretty_str(const std::vector<uint8_t> &data) { return hex_pretty_str(data.data(), data.size()); }
 
 static const uint8_t PN532_COMMAND_VERSION_DATA = 0x02;
 static const uint8_t PN532_COMMAND_SAMCONFIGURATION = 0x14;

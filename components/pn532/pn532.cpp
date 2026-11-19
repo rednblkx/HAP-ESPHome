@@ -190,7 +190,7 @@ void PN532::loop() {
 
     if (ready == READY) {
       success = this->read_response(PN532_COMMAND_WRITEREGISTER, read);
-      ESP_LOGV(TAG, "ECP: %s", format_hex(read).c_str());
+      ESP_LOGV(TAG, "ECP: %s", hex_str(read).c_str());
       this->next_flow_ = 1;
     }
     else {
@@ -208,7 +208,7 @@ void PN532::loop() {
 
     if (ready == READY) {
       success = this->read_response(PN532_COMMAND_INCOMMUNICATETHRU, read);
-      ESP_LOGV(TAG, "ECP: %s", format_hex(read).c_str());
+      ESP_LOGV(TAG, "ECP: %s", hex_str(read).c_str());
       this->next_flow_ = 2;
     }
     else {
