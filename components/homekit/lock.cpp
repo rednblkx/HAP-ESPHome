@@ -1,6 +1,7 @@
 #include <esphome/core/defines.h>
 #ifdef USE_LOCK
 #include "lock.h"
+#include <esphome/core/helpers.h>
 #include <mbedtls/sha1.h>
 #include <mbedtls/sha256.h>
 
@@ -13,9 +14,16 @@ namespace homekit {
 #endif
 
 namespace hk_compat {
+// Self-contained (not via pn532): this also has to build for locks without nfc_id,
+// where USE_HOMEKEY is not defined and pn532.h is not included.
 inline std::string bufToHexString(const uint8_t *buf, size_t len,
                                   bool ignoreLevel = false) {
-  return pn532::hex_pretty_str(buf, len);
+  if (len == 0)
+    return {};
+  std::string out(len * 3, '\0');
+  format_hex_pretty_to(&out[0], out.size(), buf, len);
+  out.resize(len * 3 - 1);
+  return out;
 }
 inline std::vector<uint8_t> getHashIdentifier(const uint8_t *key, size_t len,
                                               bool sha256) {
