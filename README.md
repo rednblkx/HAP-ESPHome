@@ -54,7 +54,7 @@ esp32:
 
 Project is divided into two different components, `homekit_base` which handles the bridge logic and `homekit` that handles the actual accessory logic (lights, switches, etc.).
 
-This repository also includes the `pn532` and `pn532_spi` components which are just slightly modified versions of the official ones from the ESPHome repository to suit HomeKey needs with no extra options added to them nor deleted, however, it's not guaranteed to be kept up to date with upstream changes.
+This repository also includes the `pn532` and `pn532_spi` components which are modified versions of the official ones from the ESPHome repository to suit HomeKey needs. Apart from the reader watchdog options described in [4.3](#43-reader-watchdog--recovery) no options were added or removed, however, it's not guaranteed to be kept up to date with upstream changes.
 
 > [!TIP]
 > For configuration examples, you can see the `.yaml` files in this repository, e.g. [lights-c3.yaml](lights-c3.yaml)
@@ -257,6 +257,71 @@ homekit:
   lock:
     - id: <insert lock id>
       nfc_id: nfc_spi_module
+```
+
+### 4.3 Reader watchdog / recovery
+
+PN532 modules have been seen to stop detecting anything after days of idling while still answering on SPI, with nothing in the logs and only a power cycle bringing them back. The `pn532_spi` component therefore runs a periodic health check and, if the reader is unhealthy, tries to recover it with escalating measures.
+
+The health check only runs while the reader is idle (no tag present, no command pending) and is split into one SPI transaction per loop iteration. It checks that:
+
+- the chip answers `GetFirmwareVersion` with the IC version seen at boot,
+- the CIU reports no temperature error (`CIU_Error` TempErr),
+- the antenna drivers switch on when the RF field is turned on (`CIU_TxControl`),
+- tag polling makes progress, i.e. the last successfully parsed poll response is not older than `max_poll_stall`.
+
+Register values are logged at `DEBUG` on every check; problems are logged at `WARN` and set the component's warning status.
+
+If a check fails, the next recovery level is run, one level per failed check. Once three checks in a row pass, escalation starts over at level 1.
+
+| Level | Action | Requires |
+| --- | --- | --- |
+| 1 | Reset polling state and re-initialise the chip (abort frame, firmware version, SAM configuration, RF field off/on cycle with Auto RFCA, retries) | – |
+| 2 | Send `PowerDown`, wake the chip via CS, re-initialise | – |
+| 3 | Pull RSTPDN low for 20 ms, re-initialise | `reset_pin` |
+| 4 | Switch the module's power off for 500 ms, re-initialise | `power_pin` |
+
+Configuration variables (all optional):
+
+- **health_check_interval** (Optional, [Time](https://esphome.io/guides/configuration-types#time)): How often to check the reader. Set to `0s` to disable the health check and automatic recovery. Defaults to `60s`.
+- **max_poll_stall** (Optional, [Time](https://esphome.io/guides/configuration-types#time)): Consider the reader unhealthy if no tag poll succeeded for this long (at least 3 × `update_interval`). `0s` disables this criterion. Defaults to `30s`.
+- **preventive_reinit_interval** (Optional, [Time](https://esphome.io/guides/configuration-types#time)): Re-initialise the chip (level 1) on this interval while idle, whether it looks healthy or not. Defaults to `0s` (off).
+- **reset_pin** (Optional, [Pin](https://esphome.io/guides/configuration-types#pin)): GPIO wired to the PN532 `RSTPDN` pin (active low). Enables recovery level 3.
+- **power_pin** (Optional, [Pin](https://esphome.io/guides/configuration-types#pin)): GPIO switching the module's supply, e.g. via a MOSFET or load switch (high = on, use `inverted: true` otherwise). Enables recovery level 4. Do not power the module straight from a GPIO. While the module is off, CS (and `reset_pin`) are driven low, but other SPI lines may still back-feed it through its protection diodes; a load switch with active discharge works best.
+- **on_recovery** (Optional, [Automation](https://esphome.io/automations/)): Triggered after every recovery attempt. The variable `level` (`int`) holds the recovery level that was run.
+
+If initialisation fails during boot, a configured `reset_pin` / `power_pin` is used once before the component is marked as failed.
+
+From lambdas, `reinit()` triggers a level 1 recovery; `get_recovery_count()`, `get_recovery_level()`, `get_health_check_count()`, `is_healthy()` and `get_last_poll_ok_age()` (ms) expose the watchdog state. `powerdown()` can be undone with `wakeup()`.
+
+```yaml
+pn532_spi:
+  id: nfc_spi_module
+  cs_pin: 7
+  update_interval: 100ms
+  health_check_interval: 60s
+  max_poll_stall: 30s
+  preventive_reinit_interval: 6h  # optional
+  reset_pin: GPIO3                # optional, PN532 RSTPDN
+  power_pin: GPIO10               # optional, switches the module supply
+  on_recovery:
+    - logger.log:
+        level: WARN
+        format: "PN532 recovery at level %d"
+        args: ["level"]
+
+button:
+  - platform: template
+    name: "Reinitialise NFC reader"
+    on_press:
+      - lambda: id(nfc_spi_module).reinit();
+
+sensor:
+  - platform: template
+    name: "NFC reader recoveries"
+    accuracy_decimals: 0
+    update_interval: 60s
+    lambda: return id(nfc_spi_module).get_recovery_count();
 ```
 
 ## Support & Contributing

@@ -18,6 +18,8 @@ class PN532Spi : public pn532::PN532,
   void dump_config() override;
 
  protected:
+  void wake_chip_() override;
+  void set_bus_power_off_(bool off) override;
   bool is_read_ready() override;
   bool write_data(const std::vector<uint8_t> &data) override;
   bool read_data(std::vector<uint8_t> &data, uint8_t len) override;
